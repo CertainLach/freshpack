@@ -1,0 +1,9 @@
+{
+	"name": "@freshpack/runtime",
+	"exports": {
+		".": "./mod.ts",
+		"./internal": "./internal.ts",
+		"./client-hmr": "./client-hmr.ts",
+		"./server-middleware": "./server-middleware.ts"
+	}
+}

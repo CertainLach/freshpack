@@ -1,0 +1,9 @@
+{
+	"name": "@freshpack/webpack",
+	"exports": {
+		".": "./mod.ts",
+		"./fresh": "./fresh.ts",
+		"./util": "./util.ts",
+		"./unmap": "./unmap.ts"
+	}
+}

@@ -1,0 +1,6 @@
+{
+	"name": "@freshpack/babel",
+	"exports": {
+		"./env": "./env.ts"
+	}
+}
