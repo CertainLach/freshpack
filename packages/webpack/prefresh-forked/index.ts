@@ -1,3 +1,5 @@
+/* FIXME: Typings are awful in this file, the port was very crude */
+
 import Webpack from "webpack";
 import {
   injectRefreshFunctions,
@@ -49,12 +51,12 @@ export class DenoPreactRefreshPlugin {
           NAME,
           ({ createData: data }) => {
             if (
-              this.matcher(data.resource) &&
-              !data.resource.includes("@prefresh") &&
-              !data.resource.includes("/prefresh-forked/loader/") &&
-              !data.resource.includes("/prefresh-forked/utils/")
+              this.matcher(data.resource!) &&
+              !data.resource!.includes("@prefresh") &&
+              !data.resource!.includes("/prefresh-forked/loader/") &&
+              !data.resource!.includes("/prefresh-forked/utils/")
             ) {
-              data.loaders.unshift({
+              data.loaders!.unshift({
                 loader: import.meta.resolve("./loader/index.ts").replace(
                   /^file:/,
                   "",
@@ -96,7 +98,7 @@ export class DenoPreactRefreshPlugin {
         compiler.context,
         dependency,
         this.options.entryOptions,
-        callback,
+        callback as any,
       );
     });
 

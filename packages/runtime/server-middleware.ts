@@ -3,7 +3,7 @@ import { setBuildCache } from "@fresh/core/internal";
 import type Webpack from "webpack";
 import { assertFreshCompilation } from "@freshpack/webpack/fresh";
 import { assertUnmapCompilation } from "@freshpack/webpack/unmap";
-import { setUnmapping } from "@freshpack/runtime/internal";
+import { setUnmapping } from "./internal.ts";
 
 export function webpackHandler<State>(
   app: App<State>,

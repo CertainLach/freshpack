@@ -21,7 +21,7 @@ export class PrefreshRuntimeModule extends Webpack.RuntimeModule {
   }
 
   override generate() {
-    const { runtimeTemplate } = this.compilation;
+    const { runtimeTemplate } = this.compilation as any;
     const declare = runtimeTemplate.supportsConst() ? "const" : "var";
 
     return Webpack.Template.asString([
