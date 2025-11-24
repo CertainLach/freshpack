@@ -4,11 +4,16 @@ import type Webpack from "webpack";
 import { assertFreshCompilation } from "@freshpack/webpack/fresh";
 import { assertUnmapCompilation } from "@freshpack/webpack/unmap";
 import { setUnmapping } from "./internal.ts";
+import * as memfs from "memfs";
 
 export function webpackHandler<State>(
   app: App<State>,
   compiler: Webpack.Compiler,
 ): (ctx: Context<State>) => Promise<Response | Middleware<State>> {
+  compiler.outputFileSystem = memfs.createFsFromVolume(
+    new memfs.Volume(),
+  ) as any;
+
   const hmrWatchers = new Set<WebSocket>();
   const broadcast = (v: unknown) => {
     const json = JSON.stringify(v);
@@ -38,7 +43,7 @@ export function webpackHandler<State>(
     setBuildCache(
       app as App<unknown>,
       stats.compilation.prodBuildCache,
-      "production",
+      "development",
     );
     setUnmapping(stats.compilation.unmapping);
   });

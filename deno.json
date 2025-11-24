@@ -21,6 +21,7 @@
     "@std/media-types": "jsr:@std/media-types@^1.1.0",
     "@std/path": "jsr:@std/path@^1.1.2",
     "babel-loader": "npm:babel-loader@^10.0.0",
+    "memfs": "npm:memfs@^4.51.0",
     "preact": "npm:preact@^10.27.2",
     "webpack": "npm:webpack@^5.102.1"
   },

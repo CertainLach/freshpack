@@ -36,6 +36,7 @@
     "npm:esbuild-wasm@~0.25.11": "0.25.12",
     "npm:esbuild@0.25.7": "0.25.7",
     "npm:esbuild@~0.25.5": "0.25.7",
+    "npm:memfs@^4.51.0": "4.51.0_tslib@2.8.1",
     "npm:preact-render-to-string@^6.6.3": "6.6.3_preact@10.27.2",
     "npm:preact@^10.27.0": "10.27.2",
     "npm:preact@^10.27.2": "10.27.2",
@@ -1114,6 +1115,54 @@
         "@jridgewell/sourcemap-codec"
       ]
     },
+    "@jsonjoy.com/base64@1.1.2_tslib@2.8.1": {
+      "integrity": "sha512-q6XAnWQDIMA3+FTiOYajoYqySkO+JSat0ytXGSuRdq9uXE7o92gzuQwQM14xaCRlBLGq3v5miDGC4vkVTn54xA==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
+    "@jsonjoy.com/buffers@1.2.1_tslib@2.8.1": {
+      "integrity": "sha512-12cdlDwX4RUM3QxmUbVJWqZ/mrK6dFQH4Zxq6+r1YXKXYBNgZXndx2qbCJwh3+WWkCSn67IjnlG3XYTvmvYtgA==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
+    "@jsonjoy.com/codegen@1.0.0_tslib@2.8.1": {
+      "integrity": "sha512-E8Oy+08cmCf0EK/NMxpaJZmOxPqM+6iSe2S4nlSBrPZOORoDJILxtbSUEDKQyTamm/BVAhIGllOBNU79/dwf0g==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
+    "@jsonjoy.com/json-pack@1.21.0_tslib@2.8.1": {
+      "integrity": "sha512-+AKG+R2cfZMShzrF2uQw34v3zbeDYUqnQ+jg7ORic3BGtfw9p/+N6RJbq/kkV8JmYZaINknaEQ2m0/f693ZPpg==",
+      "dependencies": [
+        "@jsonjoy.com/base64",
+        "@jsonjoy.com/buffers",
+        "@jsonjoy.com/codegen",
+        "@jsonjoy.com/json-pointer",
+        "@jsonjoy.com/util",
+        "hyperdyperid",
+        "thingies",
+        "tree-dump",
+        "tslib"
+      ]
+    },
+    "@jsonjoy.com/json-pointer@1.0.2_tslib@2.8.1": {
+      "integrity": "sha512-Fsn6wM2zlDzY1U+v4Nc8bo3bVqgfNTGcn6dMgs6FjrEnt4ZCe60o6ByKRjOGlI2gow0aE/Q41QOigdTqkyK5fg==",
+      "dependencies": [
+        "@jsonjoy.com/codegen",
+        "@jsonjoy.com/util",
+        "tslib"
+      ]
+    },
+    "@jsonjoy.com/util@1.9.0_tslib@2.8.1": {
+      "integrity": "sha512-pLuQo+VPRnN8hfPqUTLTHk126wuYdXVxE6aDmjSeV4NCAgyxWbiOIeNJVtID3h1Vzpoi9m4jXezf73I6LgabgQ==",
+      "dependencies": [
+        "@jsonjoy.com/buffers",
+        "@jsonjoy.com/codegen",
+        "tslib"
+      ]
+    },
     "@opentelemetry/api@1.9.0": {
       "integrity": "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="
     },
@@ -1475,6 +1524,12 @@
     "gensync@1.0.0-beta.2": {
       "integrity": "sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg=="
     },
+    "glob-to-regex.js@1.2.0_tslib@2.8.1": {
+      "integrity": "sha512-QMwlOQKU/IzqMUOAZWubUOT8Qft+Y0KQWnX9nK3ch0CJg0tTp4TvGZsTfudYKv2NzoQSyPcnA6TYeIQ3jGichQ==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
     "glob-to-regexp@0.4.1": {
       "integrity": "sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw=="
     },
@@ -1489,6 +1544,9 @@
       "dependencies": [
         "function-bind"
       ]
+    },
+    "hyperdyperid@1.2.0": {
+      "integrity": "sha512-Y93lCzHYgGWdrJ66yIktxiaGULYc6oGiABxhcO5AufBeOyoIdZF7bIfLaOrbM0iGIOXQQgxxRrFEnb+Y6w1n4A=="
     },
     "is-core-module@2.16.1": {
       "integrity": "sha512-UfoeMA6fIJ8wTYFEUjelnaGI67v6+N7qXJEvQuIGa99l4xsCruSYOVSQ0uPANn4dAzm8lkYPaKLrrijLq7x23w==",
@@ -1537,6 +1595,17 @@
       "integrity": "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==",
       "dependencies": [
         "yallist"
+      ]
+    },
+    "memfs@4.51.0_tslib@2.8.1": {
+      "integrity": "sha512-4zngfkVM/GpIhC8YazOsM6E8hoB33NP0BCESPOA6z7qaL6umPJNqkO8CNYaLV2FB2MV6H1O3x2luHHOSqppv+A==",
+      "dependencies": [
+        "@jsonjoy.com/json-pack",
+        "@jsonjoy.com/util",
+        "glob-to-regex.js",
+        "thingies",
+        "tree-dump",
+        "tslib"
       ]
     },
     "merge-stream@2.0.0": {
@@ -1703,6 +1772,21 @@
       ],
       "bin": true
     },
+    "thingies@2.5.0_tslib@2.8.1": {
+      "integrity": "sha512-s+2Bwztg6PhWUD7XMfeYm5qliDdSiZm7M7n8KjTkIsm3l/2lgVRc2/Gx/v+ZX8lT4FMA+i8aQvhcWylldc+ZNw==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
+    "tree-dump@1.1.0_tslib@2.8.1": {
+      "integrity": "sha512-rMuvhU4MCDbcbnleZTFezWsaZXRFemSqAM+7jPnzUl1fo9w3YEKOxAeui0fz3OI4EU4hf23iyA7uQRVko+UaBA==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
+    "tslib@2.8.1": {
+      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
+    },
     "undici-types@7.10.0": {
       "integrity": "sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag=="
     },
@@ -1795,6 +1879,7 @@
       "npm:@prefresh/core@^1.5.8",
       "npm:@prefresh/utils@^1.2.1",
       "npm:babel-loader@10",
+      "npm:memfs@^4.51.0",
       "npm:preact@^10.27.2",
       "npm:webpack@^5.102.1"
     ]
