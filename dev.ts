@@ -17,7 +17,7 @@ if (import.meta.main) {
     .use(webpackHandler(app, webpack));
 
   const waiter = mkCompilingWaiter(webpack);
-  Deno.serve({ port: 8444 }, async (req, info) => {
+  Deno.serve({ port: 8000 }, async (req, info) => {
     // Compilation waiter postpones response until webpack thinks the build is finished,
     // it is required because the fresh build cache might not be ready at this point, and app handler still
     // needs to be recreated for the new cache to be taken into effect.

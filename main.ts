@@ -7,7 +7,7 @@ if (import.meta.main) {
   const cache = (await import("./_fresh/cache.mjs")).default;
   setBuildCache(app, cache, "production");
   const handler = app.handler();
-  Deno.serve({ port: 8444 }, (req, info) => {
+  Deno.serve({ port: 8000 }, (req, info) => {
     return handler(req, info);
   });
 }

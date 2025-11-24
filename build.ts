@@ -115,6 +115,7 @@ export async function createConfig(
 }
 
 if (import.meta.main) {
+  Deno.env.set("NODE_ENV", "production");
   const config = await createConfig("production");
   const webpack = Webpack(config)!;
   webpack.run((err, v) => {
@@ -126,18 +127,3 @@ if (import.meta.main) {
     });
   });
 }
-// app
-//   // webpackHandler combines HMR, devserver middleware, and updates app's build cache...
-//   // Would be better to split it somehow
-//   .use(webpackHandler(app, webpack))
-//   .use((ctx) => {
-//     console.log(ctx.req.method, ctx.url.href);
-//     return ctx.next();
-//   });
-//
-// const waiter = mkCompilingWaiter(webpack);
-// Deno.serve(async (req, info) => {
-//   await waiter();
-//   // app.handler getter needs to be recreated for every request for build cache change to be reflected
-//   return app.handler()(req, info);
-// });
