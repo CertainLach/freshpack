@@ -3,7 +3,11 @@ import Webpack from "webpack";
 import { assertAbsolutePath, manglePath, stripFileUrl } from "./util.ts";
 import { assert } from "@std/assert";
 import { IslandPreparer, ProdBuildCache } from "@fresh/core/internal";
-import { extname as extnamePosix, join as joinPosix } from "@std/path/posix";
+import {
+  extname as extnamePosix,
+  join as joinPosix,
+  relative as relativePosix,
+} from "@std/path/posix";
 import { contentType as getStdContentType } from "@std/media-types/content-type";
 import { encodeHex } from "@std/encoding";
 import { UnmapPlugin } from "./unmap.ts";
@@ -110,7 +114,9 @@ export class FreshPlugin {
               );
               cacheOut.push(
                 `islandPreparer.prepare(islands,await import(${
-                  JSON.stringify(island.filePath)
+                  JSON.stringify(
+                    relativePosix(this.baseUrl.pathname, island.filePath),
+                  )
                 }),${JSON.stringify(file)},${
                   JSON.stringify(island.entryName)
                 },[])`,
@@ -124,8 +130,16 @@ export class FreshPlugin {
                   "{",
                   `id:${JSON.stringify(v.id)},`,
                   v.lazy
-                    ? `mod:()=>import(${JSON.stringify(v.filePath)}),`
-                    : `mod:await import(${JSON.stringify(v.filePath)}),`,
+                    ? `mod:()=>import(${
+                      JSON.stringify(
+                        relativePosix(this.baseUrl.pathname, v.filePath),
+                      )
+                    }),`
+                    : `mod:await import(${
+                      JSON.stringify(
+                        relativePosix(this.baseUrl.pathname, v.filePath),
+                      )
+                    }),`,
                   `type:${JSON.stringify(v.type)},`,
                   `pattern:${JSON.stringify(v.pattern)},`,
                   `routePattern:${JSON.stringify(v.routePattern)}`,
@@ -187,7 +201,9 @@ export class FreshPlugin {
                 "{",
                 `name:${JSON.stringify(asset.name)},`,
                 `hash:${JSON.stringify(encodeHex(hash))},`,
-                `filePath:new URL(${JSON.stringify(asset.name)}, import.meta.url).pathname,`,
+                `filePath:new URL(${
+                  JSON.stringify(asset.name)
+                }, import.meta.url).pathname,`,
                 `contentType:${JSON.stringify(contentType)}`,
                 "}",
                 "],",
