@@ -59,7 +59,7 @@ export class FreshPlugin {
           FreshPlugin.name,
           async (assets) => {
             const cacheOut: string[] = [
-              "const islands=newMap()",
+              "const islands=new Map()",
               "const islandPreparer=new IslandPreparer()",
             ];
 
@@ -145,7 +145,6 @@ export class FreshPlugin {
               });
             }
 
-            console.log('CLIENT ENTRY!!!', clientEntry)
             const cache = new ProdBuildCache(compilation.freshRoot, {
               version: Date.now().toString(),
               clientEntry,
