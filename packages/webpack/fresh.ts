@@ -49,7 +49,29 @@ export class FreshPlugin {
   constructor(public baseUrl: URL) {
   }
   apply(compiler: Webpack.Compiler) {
+    {
+      // HACK: Webpack does not export EntryDependency, and it is impossible to use EntryPlugin, as
+      // it wants to modify make stage, yet we have already reached this stage when we want to use
+      // this plugin.
+      //
+      // Solvable by creating custom dependency plugin, or requiring user to manually specify
+      // at least one entry... Or by registering EntryDependency manually as done here.
+      const EntryDependency =
+        Webpack.EntryPlugin.createDependency(`dummy`, {}).constructor;
+
+      compiler.hooks.compilation.tap(
+        FreshPlugin.name,
+        (compilation, { normalModuleFactory }) => {
+          compilation.dependencyFactories.set(
+            EntryDependency as any,
+            normalModuleFactory,
+          );
+        },
+      );
+    }
+
     (new UnmapPlugin()).apply(compiler);
+
     compiler.hooks.make.tapPromise(
       FreshPlugin.name,
       async (_compilation: Webpack.Compilation) => {
@@ -134,7 +156,7 @@ export class FreshPlugin {
 
               const ext = extnamePosix(asset.name);
               const contentType = getStdContentType(ext) ?? "text/plain";
-              staticFiles.set('/' + asset.name, {
+              staticFiles.set("/" + asset.name, {
                 name: asset.name,
                 filePath: asset.name,
                 hash: encodeHex(hash),

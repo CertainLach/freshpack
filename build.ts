@@ -15,11 +15,9 @@ export async function createConfig(
   return {
     mode,
     target: "web",
-    entry: {
-      // TODO: EntryDependency factory is not registered without any entry
-      // specified here. After fix, entry option will not be necessary.
-      'dummy': './dummy.ts',
-    },
+    // Needs to be empty to disable default entry creation, fresh plugin creates its own entries
+    // automatically.
+    entry: {},
     optimization: {
       runtimeChunk: "single",
       usedExports: true,
