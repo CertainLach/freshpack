@@ -2,6 +2,63 @@
 
 Freshpack builder and development server based on webpack (contrary to default esbuild/vite builders)
 
+== Example
+
+Start dev server:
+
+[source,sh]
+----
+deno task dev
+----
+
+----
+Task dev deno run -A --watch-hmr dev.ts
+HMR Process started.
+Listening on http://0.0.0.0:8000/ (http://localhost:8000/)
+assets by path *.mjs 270 KiB
+  assets by chunk 205 KiB (id hint: preact)
+    asset preact-client_ts.mjs 127 KiB [emitted] [javascript module] (id hint: preact) 1 related asset
+    asset preact-_cache_deno_npm_registry_npmjs_org_prefresh_core_1_5_8_src_index_js-packages_webpack_p-f33a21.mjs 45.8 KiB [emitted] [javascript module] (id hint: preact) 1 related asset
+    asset preact-_cache_deno_npm_registry_npmjs_org_preact_10_27_2_debug_dist_debug_module_js.mjs 15.6 KiB [emitted] [javascript module] (id hint: preact) 1 related asset
+    asset preact-islands_Counter_tsx.mjs 10.7 KiB [emitted] [javascript module] (id hint: preact) 1 related asset
+    asset preact-packages_runtime_client-hmr_ts.mjs 5.73 KiB [emitted] [javascript module] (id hint: preact) 1 related asset
+  asset runtime.mjs 48.5 KiB [emitted] [javascript module] (name: runtime) 1 related asset
+  asset client-entry.mjs 15.7 KiB [emitted] [javascript module] (name: client-entry) 1 related asset
+  asset __2f4home_2f4lach_2f5build_2f9freshpack_2f7islands_2f7Counter_2e3tsx.mjs 1.15 KiB [emitted] [javascript module] (name: __2f4home_2f4lach_2f5build_2f9freshpack_2f7islands_2f7Counter_2e3tsx)
+asset ./cache.mjs 3.44 KiB [emitted]
+asset mapped.json 2 bytes [emitted]
+Entrypoint __2f4home_2f4lach_2f5build_2f9freshpack_2f7islands_2f7Counter_2e3tsx 106 KiB (91.1 KiB) = runtime.mjs 48.5 KiB preact-_cache_deno_npm_registry_npmjs_org_prefresh_core_1_5_8_src_index_js-packages_webpack_p-f33a21.mjs 45.8 KiB preact-islands_Cou
+nter_tsx.mjs 10.7 KiB __2f4home_2f4lach_2f5build_2f9freshpack_2f7islands_2f7Counter_2e3tsx.mjs 1.15 KiB 3 auxiliary assets
+Entrypoint client-entry 237 KiB (220 KiB) = runtime.mjs 48.5 KiB preact-_cache_deno_npm_registry_npmjs_org_prefresh_core_1_5_8_src_index_js-packages_webpack_p-f33a21.mjs 45.8 KiB preact-client_ts.mjs 127 KiB client-entry.mjs 15.7 KiB 4 auxiliary assets
+runtime modules 33.3 KiB 18 modules
+cacheable modules 167 KiB
+  modules by path ../../.cache/deno/npm/registry.npmjs.org/ 73 KiB 19 modules
+  modules by path https://jsr.io/ 79 KiB
+    modules by path https://jsr.io/@fresh/core/2.1.4/src/ 65.2 KiB 11 modules
+    modules by path https://jsr.io/@std/encoding/1.0.10/*.ts 11 KiB 3 modules
+    https://jsr.io/@fresh/build-id/1.0.1/mod.ts 2.78 KiB [built] [code generated]
+  modules by path ./ 14.5 KiB
+    modules by path ./packages/ 6.44 KiB 2 modules
+    + 3 modules
+https://jsr.io/@fresh/core/2.1.4/src/runtime/client/ https://jsr.io/@fresh/core/...(truncated) 160 bytes [built] [code generated]
+
+webpack 5.102.1 compiled in 1286 ms
+----
+
+Open https://localhost:8000/ and encounter a working fresh example, edit any file - and it will be hot reloaded
+
+For production:
+
+[source,sh]
+----
+# Generate _fresh directory
+deno task build
+# Run production server
+deno task main
+# Compile everything into a single executable
+deno task compile
+----
+
 == TODO
 
 Listen for hmr event on server and cause reloads on server, but only for things that the client is unable to reload themselves (E.g changes in routes should cause client to reload page, but change of islands should not, as client-side HMR will work in that case)
