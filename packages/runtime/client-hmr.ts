@@ -67,7 +67,9 @@ async function checkUpdates(fromUpdate = false) {
 
     logUpdate(updatedModules, renewedModules);
 
-    await checkUpdates(true);
+    if (!upToDate()) {
+      await checkUpdates(true);
+    }
   } catch (e) {
     const status = import.meta.webpackHot.status();
     if (["abort", "fail"].indexOf(status) >= 0) {
@@ -100,6 +102,7 @@ if (import.meta.webpackHot) {
       console.info("[HMR]", "webpack is working...");
     } else if ("done" in data) {
       const hash = data.done.hash;
+      lastHash = hash;
       console.info("[HMR]", "webpack rebuilt", hash);
       signalled();
     }

@@ -35,7 +35,6 @@ export function webpackHandler<State>(
     before: "FreshpackCompilingWait",
   }, async (stats) => {
     console.info(stats.toString(compiler.options.stats));
-    broadcast({ done: { hash: stats.hash } });
 
     assertFreshCompilation(stats.compilation);
     assertUnmapCompilation(stats.compilation);
@@ -46,6 +45,7 @@ export function webpackHandler<State>(
       "development",
     );
     setUnmapping(stats.compilation.unmapping);
+    broadcast({ done: { hash: stats.hash } });
   });
 
   if (compiler.options.watch) {
