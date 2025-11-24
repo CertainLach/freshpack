@@ -81,6 +81,7 @@ export class FreshPlugin {
           FreshPlugin.name,
           async (assets) => {
             const cacheOut: string[] = [
+              'import{IslandPreparer,ProdBuildCache}from"@fresh/core/internal"',
               "const islands=new Map()",
               "const islandPreparer=new IslandPreparer()",
             ];
@@ -110,13 +111,26 @@ export class FreshPlugin {
               cacheOut.push(
                 `islandPreparer.prepare(islands,await import(${
                   JSON.stringify(island.filePath)
-                }),${JSON.stringify(file)},${JSON.stringify(island.entryName),
-                  []})`,
+                }),${JSON.stringify(file)},${
+                  JSON.stringify(island.entryName)
+                },[])`,
               );
             }
 
+            cacheOut.push("const fsRoutes=[");
             const fsRoutes = await Promise.all(
               compilation.freshRoutes.map(async (v) => {
+                cacheOut.push(
+                  "{",
+                  `id:${JSON.stringify(v.id)},`,
+                  v.lazy
+                    ? `mod:()=>import(${JSON.stringify(v.filePath)}),`
+                    : `mod:await import(${JSON.stringify(v.filePath)}),`,
+                  `type:${JSON.stringify(v.type)},`,
+                  `pattern:${JSON.stringify(v.pattern)},`,
+                  `routePattern:${JSON.stringify(v.routePattern)}`,
+                  "},",
+                );
                 assertAbsolutePath(v.filePath);
                 return {
                   ...v,
@@ -126,6 +140,7 @@ export class FreshPlugin {
                 };
               }),
             );
+            cacheOut.push("]");
 
             const clientEntrypoint = compilation.entrypoints.get(
               "client-entry",
@@ -139,6 +154,7 @@ export class FreshPlugin {
               TMP_BASE_PATH,
               clientEntrypoint,
             );
+            cacheOut.push("const staticFiles=new Map([");
             for (const _asset of compilation.getAssets()) {
               const asset = compilation.getAsset(_asset.name)!;
               // const assetPath = join(compilation.outputOptions.path, asset.name);
@@ -165,8 +181,33 @@ export class FreshPlugin {
                 data: file,
                 size: file.length,
               });
+              cacheOut.push(
+                "[",
+                `${JSON.stringify("/" + asset.name)},`,
+                "{",
+                `name:${JSON.stringify(asset.name)},`,
+                `hash:${JSON.stringify(encodeHex(hash))},`,
+                `filePath:new URL(${JSON.stringify(asset.name)}, import.meta.url).pathname,`,
+                `contentType:${JSON.stringify(contentType)}`,
+                "}",
+                "],",
+              );
             }
+            cacheOut.push("])");
 
+            cacheOut.push(
+              "export default new ProdBuildCache(",
+              JSON.stringify(compilation.freshRoot) + ",",
+              "{",
+              `version: ${JSON.stringify(Date.now().toString())},`,
+              `clientEntry: ${JSON.stringify(clientEntry)},`,
+              `entryAssets: [],`,
+              "islands,",
+              "fsRoutes,",
+              "staticFiles,",
+              "}",
+              ")",
+            );
             const cache = new ProdBuildCache(compilation.freshRoot, {
               version: Date.now().toString(),
               clientEntry,
@@ -193,6 +234,11 @@ export class FreshPlugin {
               });
             };
             compilation.prodBuildCache = cache;
+
+            compilation.emitAsset(
+              "./cache.mjs",
+              new compiler.webpack.sources.RawSource(cacheOut.join("\n")),
+            );
           },
         );
 
