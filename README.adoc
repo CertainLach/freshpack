@@ -1,0 +1,7 @@
+= Freshpack
+
+Freshpack builder and development server based on webpack (contrary to default esbuild/vite builders)
+
+== TODO
+
+Listen for hmr event on server and cause reloads on server, but only for things that the client is unable to reload themselves (E.g changes in routes should cause client to reload page, but change of islands should not, as client-side HMR will work in that case)

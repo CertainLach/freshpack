@@ -1,4 +1,9 @@
 {
+  "tasks": {
+    "dev": "deno run -A --watch-hmr dev.ts",
+    "build": "deno run -A --watch-hmr build.ts",
+    "run": "deno run --allow-env=DENO_DEPLOYMENT_ID,GITHUB_SHA,CI_COMMIT_SHA --allow-net=0.0.0.0:8444 --allow-read=_fresh main.ts"
+  },
   "workspace": {
     "members": [
       "packages/runtime",
