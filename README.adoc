@@ -2,6 +2,10 @@
 
 Freshpack builder and development server based on webpack (contrary to default esbuild/vite builders)
 
+== Implementation details
+
+Fresh schema for file caching is used instead of webpack content-addressed thing.
+
 == Example
 
 Start dev server:

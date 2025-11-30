@@ -1,6 +1,11 @@
 import { crawlFsItem, type FsRouteFileNoMod } from "@fresh/core/internal-dev";
 import Webpack from "webpack";
-import { assertAbsolutePath, manglePath, stripFileUrl } from "./util.ts";
+import {
+  assertAbsolutePath,
+  ensureDirPath,
+  manglePath,
+  stripFileUrl,
+} from "./util.ts";
 import { assert } from "@std/assert";
 import { IslandPreparer, ProdBuildCache } from "@fresh/core/internal";
 import {
@@ -12,10 +17,49 @@ import { contentType as getStdContentType } from "@std/media-types/content-type"
 import { encodeHex } from "@std/encoding";
 import { UnmapPlugin } from "./unmap.ts";
 
+type JsRaw = { _jsRaw: string };
+type ToJsRaw =
+  | string
+  | JsRaw
+  | (ToJsRaw[])
+  | Record<string, string | JsRaw>
+  | Map<string, JsRaw>;
+function toJsRaw(v: ToJsRaw): JsRaw {
+  if (typeof v === "string") {
+    return { _jsRaw: JSON.stringify(v) };
+  }
+  if (v instanceof Array) {
+    return {
+      _jsRaw: "[" + v.map((v) =>
+        toJsRaw(v)._jsRaw
+      ).join(v.length > 5 ? ",\n" : ",") +
+        "]",
+    };
+  }
+  if (v instanceof Map) {
+    return js`new Map(${
+      v.entries().map(([name, v]) => js`[${name},${v}]`).toArray()
+    })`;
+  }
+  if (typeof v === "object" && !("_jsRaw" in v)) {
+    const entries = Object.entries(v);
+    return {
+      _jsRaw: "{" + entries.map(([name, v]) =>
+        `${name}:${toJsRaw(v)._jsRaw}`
+      ).join(entries.length > 10 ? ",\n" : ",") + "}",
+    };
+  }
+  return v as JsRaw;
+}
+const js = (template: TemplateStringsArray, ...subs: ToJsRaw[]) => ({
+  _jsRaw: String.raw(template, ...subs.map((v) => toJsRaw(v)._jsRaw)),
+});
+
 interface WebpackFreshCompilation extends Webpack.Compilation {
   freshRoutes: FsRouteFileNoMod<unknown>[];
   freshIslands: { entryName: string; filePath: string }[];
   freshRoot: string;
+  buildId: string;
 
   prodBuildCache: ProdBuildCache<unknown>;
 }
@@ -33,13 +77,12 @@ export function assertFreshCompilation(
 type CacheStaticFile = {
   name: string;
   filePath: string;
-  hash: string;
   contentType: string;
+  hash: string;
   data: Uint8Array;
   size: number;
 };
 
-const TMP_BASE_PATH = "/";
 function getMainChunkName(
   basePath: string,
   e: Webpack.Entrypoint,
@@ -48,10 +91,26 @@ function getMainChunkName(
   const files = [...entryChunk.files].map((v) => joinPosix(basePath, v));
   return files[0];
 }
+function getChunkFiles(
+  basePath: string,
+  e: Webpack.Entrypoint,
+): string[] {
+  return e.getFiles().map((v) => joinPosix(basePath, v));
+}
 
 export class FreshPlugin {
   constructor(public baseUrl: URL) {
+    ensureDirPath(this.baseUrl.pathname);
   }
+  pathRelativeToBase(path: string) {
+    return relativePosix(this.baseUrl.pathname, path);
+  }
+  #dist?: string;
+  pathRelativeToDist(path: string) {
+    assert(this.#dist, "dist path was not determined yet");
+    return relativePosix(this.#dist, path);
+  }
+
   apply(compiler: Webpack.Compiler) {
     {
       // HACK: Webpack does not export EntryDependency, and it is impossible to use EntryPlugin, as
@@ -80,14 +139,32 @@ export class FreshPlugin {
       FreshPlugin.name,
       async (_compilation: Webpack.Compilation) => {
         const compilation = _compilation as WebpackFreshCompilation;
+        this.#dist = compilation.outputOptions.path;
+
+        const compilationId = Date.now().toString(36);
+
+        // Ensure hot chunks are resolved from correct path, they can't contain compilationId in name
+        compilation.outputOptions.publicPath = "/";
+        {
+          // Fresh has no native support for content-addressed static assets, instead there is such paths.
+          // We also don't need webpack to use contentHash, as the paths are already made unique.
+          // TODO: It would be better to use content-addressing for production updates and better CDN support,
+          // but support for that needs to be added upstream.
+          compilation.outputOptions.filename =
+            `_fresh/js/${compilationId}/[id].mjs`;
+          compilation.outputOptions.chunkFilename =
+            `_fresh/js/${compilationId}/[id].mjs`;
+        }
 
         compilation.hooks.processAssets.tapPromise(
           FreshPlugin.name,
           async (assets) => {
-            const cacheOut: string[] = [
-              'import{IslandPreparer,ProdBuildCache}from"@fresh/core/internal"',
-              "const islands=new Map()",
-              "const islandPreparer=new IslandPreparer()",
+            compilation.getAssets();
+
+            const cacheOut: JsRaw[] = [
+              js`import{IslandPreparer,ProdBuildCache}from"@fresh/core/internal"`,
+              js`const islands=new Map()`,
+              js`const islandPreparer=new IslandPreparer()`,
             ];
 
             const staticFiles = new Map<string, CacheStaticFile>();
@@ -101,7 +178,7 @@ export class FreshPlugin {
                 `unable to find island entrypoint: ${island.entryName}`,
               );
               const file = getMainChunkName(
-                TMP_BASE_PATH,
+                `/`,
                 entrypoint,
               );
 
@@ -112,39 +189,25 @@ export class FreshPlugin {
                 island.entryName,
                 [],
               );
+              const importPath = this.pathRelativeToDist(island.filePath);
               cacheOut.push(
-                `islandPreparer.prepare(islands,await import(${
-                  JSON.stringify(
-                    relativePosix(this.baseUrl.pathname, island.filePath),
-                  )
-                }),${JSON.stringify(file)},${
-                  JSON.stringify(island.entryName)
-                },[])`,
+                js`islandPreparer.prepare(islands,await import(${importPath}),${file},${island.entryName},[])`,
               );
             }
 
-            cacheOut.push("const fsRoutes=[");
+            const fsRoutesOut: JsRaw[] = [];
             const fsRoutes = await Promise.all(
               compilation.freshRoutes.map(async (v) => {
-                cacheOut.push(
-                  "{",
-                  `id:${JSON.stringify(v.id)},`,
-                  v.lazy
-                    ? `mod:()=>import(${
-                      JSON.stringify(
-                        relativePosix(this.baseUrl.pathname, v.filePath),
-                      )
-                    }),`
-                    : `mod:await import(${
-                      JSON.stringify(
-                        relativePosix(this.baseUrl.pathname, v.filePath),
-                      )
-                    }),`,
-                  `type:${JSON.stringify(v.type)},`,
-                  `pattern:${JSON.stringify(v.pattern)},`,
-                  `routePattern:${JSON.stringify(v.routePattern)}`,
-                  "},",
-                );
+                const importPath = this.pathRelativeToDist(v.filePath);
+                fsRoutesOut.push(toJsRaw({
+                  id: v.id,
+                  mod: v.lazy
+                    ? js`()=>import(${importPath})`
+                    : js`await import(${importPath})`,
+                  type: v.type,
+                  pattern: v.pattern,
+                  routePattern: v.routePattern,
+                }));
                 assertAbsolutePath(v.filePath);
                 return {
                   ...v,
@@ -154,7 +217,7 @@ export class FreshPlugin {
                 };
               }),
             );
-            cacheOut.push("]");
+            cacheOut.push(js`const fsRoutes=${fsRoutesOut}`);
 
             const clientEntrypoint = compilation.entrypoints.get(
               "client-entry",
@@ -163,79 +226,71 @@ export class FreshPlugin {
               clientEntrypoint,
               `unable to find client entrypoint`,
             );
-            // console.log("EPP", clientEntrypoint.getFiles());
             const clientEntry = getMainChunkName(
-              TMP_BASE_PATH,
+              `/`,
               clientEntrypoint,
             );
-            cacheOut.push("const staticFiles=new Map([");
+            const clientEntryAssets = getChunkFiles(
+              `/`,
+              clientEntrypoint,
+            );
+            const staticFilesOut = new Map<string, JsRaw>();
             for (const _asset of compilation.getAssets()) {
               const asset = compilation.getAsset(_asset.name)!;
-              // const assetPath = join(compilation.outputOptions.path, asset.name);
               const file_: Uint8Array<ArrayBufferLike> = assets[asset.name]
                 .buffer();
               const file = file_ as Uint8Array<ArrayBuffer>;
-              // const file: Uint8Array<ArrayBuffer> = await new Promise((res, rej) =>
-              //   compiler.outputFileSystem!.readFile(assetPath, (e, f) => {
-              //     if (e) return rej(e);
-              //     return res(f! as Uint8Array<ArrayBuffer>);
-              //   })
-              // );
               const hash = await crypto.subtle.digest("SHA-1", file.buffer);
-              // console.log(asset.name, asset.source, asset.info);
 
               const ext = extnamePosix(asset.name);
               const contentType = getStdContentType(ext) ?? "text/plain";
-              staticFiles.set("/" + asset.name, {
-                name: asset.name,
-                filePath: asset.name,
-                hash: encodeHex(hash),
-                contentType,
 
+              const name = "/" + asset.name;
+              staticFiles.set(name, {
+                name,
+                filePath: asset.name,
+                contentType,
+                hash: encodeHex(hash),
                 data: file,
                 size: file.length,
               });
-              cacheOut.push(
-                "[",
-                `${JSON.stringify("/" + asset.name)},`,
-                "{",
-                `name:${JSON.stringify(asset.name)},`,
-                `hash:${JSON.stringify(encodeHex(hash))},`,
-                `filePath:new URL(${
-                  JSON.stringify(asset.name)
-                }, import.meta.url).pathname,`,
-                `contentType:${JSON.stringify(contentType)}`,
-                "}",
-                "],",
+              staticFilesOut.set(
+                name,
+                toJsRaw({
+                  name,
+                  filePath:
+                    js`new URL(${asset.name}, import.meta.url).pathname`,
+                  hash: encodeHex(hash),
+                  contentType,
+                }),
               );
             }
-            cacheOut.push("])");
+            cacheOut.push(js`const staticFiles=${staticFilesOut}`);
 
             cacheOut.push(
-              "export default new ProdBuildCache(",
-              JSON.stringify(compilation.freshRoot) + ",",
-              "{",
-              `version: ${JSON.stringify(Date.now().toString())},`,
-              `clientEntry: ${JSON.stringify(clientEntry)},`,
-              `entryAssets: [],`,
-              "islands,",
-              "fsRoutes,",
-              "staticFiles,",
-              "}",
-              ")",
+              js`export default new ProdBuildCache(${compilation.freshRoot}, ${({
+                version: compilationId,
+                clientEntry,
+                entryAssets: toJsRaw(clientEntryAssets),
+                islands: js`islands`,
+                fsRoutes: js`fsRoutes`,
+                staticFiles: js`staticFiles`,
+              })})`,
             );
+            // Here ProdBuildCache is being used as MemoryBuildCache from fresh
             const cache = new ProdBuildCache(compilation.freshRoot, {
-              version: Date.now().toString(),
+              version: compilationId,
               clientEntry,
               fsRoutes,
               staticFiles,
               islands,
-              entryAssets: [],
+              entryAssets: clientEntryAssets,
             });
             cache.readFile = (pathname) => {
               const st = staticFiles.get(pathname);
-              if (!st) return Promise.resolve(null);
-              // console.log("readStatic", pathname, st);
+              if (!st) {
+                return Promise.resolve(null);
+              }
               return Promise.resolve({
                 contentType: st.contentType,
                 hash: st.hash,
@@ -253,7 +308,9 @@ export class FreshPlugin {
 
             compilation.emitAsset(
               "./cache.mjs",
-              new compiler.webpack.sources.RawSource(cacheOut.join("\n")),
+              new compiler.webpack.sources.RawSource(
+                cacheOut.map((v) => v._jsRaw).join("\n"),
+              ),
             );
           },
         );
@@ -265,7 +322,7 @@ export class FreshPlugin {
         });
         compilation.freshRoutes = item.routes;
         compilation.freshIslands = [];
-        compilation.freshRoot = stripFileUrl(this.baseUrl.href);
+        compilation.freshRoot = this.pathRelativeToBase(".");
 
         const addEntryPromises = [];
         for (const island of item.islands) {
@@ -296,7 +353,6 @@ export class FreshPlugin {
         {
           const name = "client-entry";
           const file = stripFileUrl(new URL("./client.ts", this.baseUrl).href);
-          // console.log(name, file);
           addEntryPromises.push(
             new Promise<void>((res, rej) =>
               compilation.addEntry(

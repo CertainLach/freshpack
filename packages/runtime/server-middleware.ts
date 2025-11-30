@@ -42,7 +42,8 @@ export function webpackHandler<State>(
     setBuildCache(
       app as App<unknown>,
       stats.compilation.prodBuildCache,
-      "development",
+      // development cache works not the way we want to
+      "production",
     );
     setUnmapping(stats.compilation.unmapping);
     broadcast({ done: { hash: stats.hash } });
@@ -62,7 +63,7 @@ export function webpackHandler<State>(
   }
 
   return (ctx) => {
-    if (ctx.url.pathname.endsWith("/__freshpack_hmr")) {
+    if (ctx.url.pathname.endsWith("/_freshpack_hmr")) {
       const { response, socket } = Deno.upgradeWebSocket(ctx.req);
 
       socket.addEventListener("open", () => {

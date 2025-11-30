@@ -1,6 +1,7 @@
 /* Build configuration used by dev server, and server builder */
 
 import Webpack from "webpack";
+import CopyPlugin from "copy-webpack-plugin";
 import {
   DenoLoaderPlugin,
   DenoPreactRefreshPlugin,
@@ -27,7 +28,7 @@ export async function createConfig(
         maxInitialRequests: Infinity,
         maxAsyncRequests: Infinity,
         cacheGroups: {
-          // defaultVendor doesn't work with deno, better specify all the runtime dependencies manually here
+          // defaultVendor doesn't work with deno, if you want assets to be grouped - it needs to be done explicitly
           preact: {
             test: /(preact|prefresh|mobx|fresh)/,
             enforce: true,
@@ -40,8 +41,6 @@ export async function createConfig(
     },
     output: {
       clean: true,
-      path: new URL("_fresh", import.meta.url).pathname,
-      filename: mode === "production" ? "[chunkhash].mjs" : "[id].mjs",
       chunkFormat: "module",
       chunkLoading: "import",
       workerChunkLoading: "import",
@@ -103,8 +102,11 @@ export async function createConfig(
       new DenoPreactRefreshPlugin({ entryOptions: {} }),
       new DenoLoaderPlugin({ debug: DEBUG_RESOLVED }),
 
-      new FreshPlugin(new URL(import.meta.url)),
-    ],
+      new FreshPlugin(new URL(".", import.meta.url)),
+
+      // Copied assets are added to build cache.
+      new CopyPlugin({ patterns: ["static"] }),
+    ].filter((v) => v !== null),
   };
 }
 

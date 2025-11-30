@@ -92,7 +92,7 @@ async function signalled() {
 }
 
 if (import.meta.webpackHot) {
-  const ws = new WebSocket("/__freshpack_hmr");
+  const ws = new WebSocket("/_freshpack_hmr");
   ws.addEventListener("open", () => {
     console.info("[HMR]", "opened");
   });
