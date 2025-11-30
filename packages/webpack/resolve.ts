@@ -1,21 +1,19 @@
 import {
-  Loader,
+  type Loader,
   RequestedModuleType,
   ResolutionMode,
   Workspace,
-  WorkspaceOptions,
+  type WorkspaceOptions,
 } from "@deno/loader";
 import { assert, unreachable } from "@std/assert";
-import Webpack, { Compiler } from "webpack";
+import Webpack, { type Compiler } from "webpack";
 import { Buffer } from "node:buffer";
 import {
-  ensureFilePath,
   ensureFileUrl,
   ensureModPath,
   stripFileUrl,
 } from "./util.ts";
 import { dirname } from "@std/path";
-import { AssertionError } from "node:assert";
 
 function resolverSpan(
   logSuccess: boolean | undefined,
@@ -82,10 +80,6 @@ async function simpleDenoResolve(
   request: string,
   esm: boolean,
 ) {
-  if (request === "react-dom") {
-    request = "preact/compat";
-  }
-
   let resolution: string | undefined;
   if (request.startsWith("/")) {
     resolution = `file://${request}`;
@@ -482,15 +476,6 @@ export class DenoLoaderPlugin {
             unreachable("jsr should be resolved to https by deno resolver");
           },
         );
-        // hooks.needBuild.tapPromise("JsrPlugin", async (res, mod) => {
-        //   if (
-        //     res.resource.startsWith("https://") ||
-        //     res.resource.includes("build-id")
-        //   ) {
-        //     // console.log("need build", res);
-        //     return true;
-        //   }
-        // });
         hooks.readResourceForScheme.for("https").tapAsync(
           "JsrPlugin",
           async (resource, module, cb) => {
