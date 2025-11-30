@@ -1,1 +1,4 @@
 /dist
+
+# Output of deno compile
+/freshpack

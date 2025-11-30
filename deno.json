@@ -3,7 +3,7 @@
     "dev": "deno run -A --watch-hmr dev.ts",
     "build": "deno run -A build.ts",
     "run": "deno run --allow-env=DENO_DEPLOYMENT_ID,GITHUB_SHA,CI_COMMIT_SHA --allow-net=0.0.0.0:8000 --allow-read=_fresh main.ts",
-    "compile": "deno compile --include _fresh --allow-env=DENO_DEPLOYMENT_ID,GITHUB_SHA,CI_COMMIT_SHA --allow-net=0.0.0.0:8000 main.ts"
+    "compile": "deno task build && deno compile --include dist --allow-env=DENO_DEPLOYMENT_ID,GITHUB_SHA,CI_COMMIT_SHA --allow-net=0.0.0.0:8000 main.ts"
   },
   "workspace": {
     "members": [
