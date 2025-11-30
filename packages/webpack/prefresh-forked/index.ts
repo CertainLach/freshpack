@@ -80,7 +80,7 @@ export class DenoPreactRefreshPlugin {
     }
 
     const provide = {
-      [prefreshUtils]: import.meta.resolve("./utils/prefresh"),
+      [prefreshUtils]: import.meta.resolve("./utils/prefresh.ts"),
     };
 
     if (this.options.overlay) {
