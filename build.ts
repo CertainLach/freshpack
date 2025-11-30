@@ -98,8 +98,11 @@ export async function createConfig(
     },
     devtool: mode === "production" ? "source-map" : "cheap-source-map",
     plugins: [
-      new Webpack.HotModuleReplacementPlugin(),
-      new DenoPreactRefreshPlugin({ entryOptions: {} }),
+      mode !== "production" ? new Webpack.HotModuleReplacementPlugin() : null,
+      mode !== "production"
+        ? new DenoPreactRefreshPlugin({ entryOptions: {} })
+        : null,
+
       new DenoLoaderPlugin({ debug: DEBUG_RESOLVED }),
 
       new FreshPlugin(new URL(".", import.meta.url)),
