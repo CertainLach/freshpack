@@ -63,7 +63,7 @@ export async function createConfig(
               plugins: [
                 // Can't use name here, because babel tries to resolve the module on its own,
                 // and also is not accepting .ts files here. To be fixed on babel side?
-                [(await import("@freshpack/babel/env")).default()],
+                [(await import("@freshpack/babel/env")).default, {}],
                 [
                   "@babel/plugin-transform-react-jsx",
                   {
@@ -78,11 +78,13 @@ export async function createConfig(
       ],
     },
     resolve: {
-      alias: {
-        "react": "preact/compat",
-        "react-dom": "preact/compat",
-        "react/jsx-runtime": "preact/jsx-runtime",
-      },
+      // Optional: use react libraries with preact
+      // alias: {
+      //   "react": "preact/compat",
+      //   "react-dom": "preact/compat",
+      //   "react/jsx-runtime": "preact/jsx-runtime",
+      // },
+
       // Disable node_modules resolution, only use deno loader
       // TODO: To be disabled by DenoLoaderPlugin
       fallback: {},
