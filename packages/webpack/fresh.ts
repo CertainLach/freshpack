@@ -325,8 +325,11 @@ export class FreshPlugin {
         compilation.freshRoot = this.pathRelativeToBase(".");
 
         const addEntryPromises = [];
+        let isId = 0;
         for (const island of item.islands) {
-          const name = manglePath(island);
+          const name = compiler.options.mode === "production"
+            ? `is${isId++}`
+            : manglePath(island);
           compilation.freshIslands.push({ entryName: name, filePath: island });
           addEntryPromises.push(
             new Promise<void>((res, rej) =>
