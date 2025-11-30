@@ -29,7 +29,6 @@ export class UnmapPlugin {
           UnmapPlugin.name,
           (parser) => {
             parser.hooks.call.for("unmap").tap(UnmapPlugin.name, (expr) => {
-              console.log('unmap call!');
               const error = (msg: string) => {
                 const err = new compiler.webpack.WebpackError(msg);
                 err.loc = expr.loc!;

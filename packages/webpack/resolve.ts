@@ -8,11 +8,7 @@ import {
 import { assert, unreachable } from "@std/assert";
 import Webpack, { type Compiler } from "webpack";
 import { Buffer } from "node:buffer";
-import {
-  ensureFileUrl,
-  ensureModPath,
-  stripFileUrl,
-} from "./util.ts";
+import { ensureFileUrl, ensureModPath, stripFileUrl } from "./util.ts";
 import { dirname } from "@std/path";
 
 function resolverSpan(

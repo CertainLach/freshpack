@@ -8,13 +8,19 @@ import {
   prefreshUtils,
 } from "./utils/constants.ts";
 import { PrefreshRuntimeModule } from "./utils/Runtime.ts";
+import { defineRequire } from "../requireHook.ts";
 
 type Options = {
   overlay?: {
     module: string;
   };
-  entryOptions: string | Webpack.EntryOptions;
+  entryOptions?: string | Webpack.EntryOptions;
 };
+
+const internalPrefreshLoader = defineRequire(
+  "@freshpack/webpack/internal-prefresh-loader",
+  await import("./loader/index.ts"),
+);
 
 export class DenoPreactRefreshPlugin {
   matcher;
@@ -29,7 +35,6 @@ export class DenoPreactRefreshPlugin {
     compiler: Webpack.Compiler,
     RuntimeGlobals: typeof Webpack.RuntimeGlobals,
   ) {
-    // const createPrefreshRuntimeModule = require("./utils/Runtime.ts");
     compiler.hooks.compilation.tap(
       NAME,
       (compilation, { normalModuleFactory }) => {
@@ -57,10 +62,7 @@ export class DenoPreactRefreshPlugin {
               !data.resource!.includes("/prefresh-forked/utils/")
             ) {
               data.loaders!.unshift({
-                loader: import.meta.resolve("./loader/index.ts").replace(
-                  /^file:/,
-                  "",
-                ),
+                loader: internalPrefreshLoader,
                 options: undefined,
               });
             }
@@ -97,7 +99,7 @@ export class DenoPreactRefreshPlugin {
       compilation.addEntry(
         compiler.context,
         dependency,
-        this.options.entryOptions,
+        this.options.entryOptions ?? {},
         callback as any,
       );
     });
