@@ -1,6 +1,6 @@
-const { Template } = require('webpack');
+const { Template } = require("webpack");
 
-const NAMESPACE = '__PREFRESH__';
+const NAMESPACE = "__PREFRESH__";
 
 const beforeModule = `
 var prevRefreshReg = self.$RefreshReg$;
@@ -30,30 +30,36 @@ const afterModule = `
 }
 `;
 
-export function createRefreshTemplate(source, chunk, hash, mainTemplate, options) {
+export function createRefreshTemplate(
+  source,
+  chunk,
+  hash,
+  mainTemplate,
+  options,
+) {
   let filename = mainTemplate.outputOptions.filename;
-  if (typeof filename === 'function') {
+  if (typeof filename === "function") {
     filename = filename({
       chunk,
       hash,
-      contentHashType: 'javascript',
-      hashWithLength: length =>
+      contentHashType: "javascript",
+      hashWithLength: (length) =>
         mainTemplate.renderCurrentHashCode(hash, length),
       noChunkHash: mainTemplate.useChunkHash(chunk),
     });
   }
 
-  if (!filename || !filename.includes('.js')) {
+  if (!filename || !filename.includes(".js")) {
     return source;
   }
 
-  const lines = source.split('\n');
+  const lines = source.split("\n");
 
   // Webpack generates this line whenever the mainTemplate is called
-  const moduleInitializationLineNumber = lines.findIndex(line =>
+  const moduleInitializationLineNumber = lines.findIndex((line) =>
     options.runsInNextJs
-      ? line.includes('modules[moduleId].call(')
-      : line.startsWith('modules[moduleId].call')
+      ? line.includes("modules[moduleId].call(")
+      : line.startsWith("modules[moduleId].call")
   );
 
   if (moduleInitializationLineNumber === -1) {
@@ -68,4 +74,3 @@ export function createRefreshTemplate(source, chunk, hash, mainTemplate, options
     ...lines.slice(moduleInitializationLineNumber + 1, lines.length),
   ]);
 }
-

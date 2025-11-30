@@ -1,6 +1,6 @@
 import { unmapping } from "./internal.ts";
 
-const IS_BROWSER = typeof document !== 'undefined'
+const IS_BROWSER = typeof document !== "undefined";
 
 export function unmap(name: string, url: URL): string {
   if (IS_BROWSER) {

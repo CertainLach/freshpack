@@ -1,8 +1,8 @@
 {
-	"name": "@freshpack/babel",
-	"version": "0.1.0",
-	"license": "MIT",
-	"exports": {
-		"./env": "./env.ts"
-	}
+  "name": "@freshpack/babel",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": {
+    "./env": "./env.ts"
+  }
 }

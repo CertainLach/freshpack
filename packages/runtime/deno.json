@@ -1,11 +1,11 @@
 {
-	"name": "@freshpack/runtime",
-	"version": "0.2.0",
-	"license": "MIT",
-	"exports": {
-		".": "./mod.ts",
-		"./internal": "./internal.ts",
-		"./client-hmr": "./client-hmr.ts",
-		"./server-middleware": "./server-middleware.ts"
-	}
+  "name": "@freshpack/runtime",
+  "version": "0.2.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./mod.ts",
+    "./internal": "./internal.ts",
+    "./client-hmr": "./client-hmr.ts",
+    "./server-middleware": "./server-middleware.ts"
+  }
 }

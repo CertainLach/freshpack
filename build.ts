@@ -99,13 +99,11 @@ export async function createConfig(
     devtool: mode === "production" ? "source-map" : "cheap-source-map",
     plugins: [
       mode !== "production" ? new Webpack.HotModuleReplacementPlugin() : null,
-      mode !== "production"
-        ? new DenoPreactRefreshPlugin({ entryOptions: {} })
-        : null,
+      mode !== "production" ? new DenoPreactRefreshPlugin({}) : null,
 
       new DenoLoaderPlugin({ debug: DEBUG_RESOLVED }),
 
-      new FreshPlugin(new URL(".", import.meta.url)),
+      new FreshPlugin(new URL(".", import.meta.url), (path) => import(path)),
 
       // Copied assets are added to build cache.
       new CopyPlugin({ patterns: ["static"] }),
