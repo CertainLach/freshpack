@@ -1,11 +1,11 @@
 {
-	"name": "@freshpack/webpack",
-	"version": "0.2.0",
-	"license": "MIT",
-	"exports": {
-		".": "./mod.ts",
-		"./fresh": "./fresh.ts",
-		"./util": "./util.ts",
-		"./unmap": "./unmap.ts"
-	}
+  "name": "@freshpack/webpack",
+  "version": "0.2.1",
+  "license": "MIT",
+  "exports": {
+    ".": "./mod.ts",
+    "./fresh": "./fresh.ts",
+    "./util": "./util.ts",
+    "./unmap": "./unmap.ts"
+  }
 }

@@ -99,8 +99,24 @@ function getChunkFiles(
 }
 
 export class FreshPlugin {
-  constructor(public baseUrl: URL) {
+  /**
+   * @param baseUrl Location of fresh project root directory, you can specify it as `new URL('.', import.meta.url)` in build.ts
+   * @param importHelper JSR dynamic file import workaround: You should pass `(path) => import(path)` here, where the function
+   *                     should be defined anywhere outside of JSR published package. See this for details: https://github.com/denoland/deno/discussions/26266
+   *                     This function will always be called with absolute path.
+   */
+  constructor(
+    public baseUrl: URL,
+    public importHelper: (path: string) => Promise<Record<string, unknown>>,
+  ) {
     ensureDirPath(this.baseUrl.pathname);
+    if (!importHelper) {
+      console.warn(
+        "[FreshPlugin]",
+        "importHelper is not set, jsr release of @freshpack/webpack doesn't work without it: https://github.com/denoland/deno/discussions/26266#discussioncomment-12198284",
+      );
+      this.importHelper = (path: string) => import(path);
+    }
   }
   pathRelativeToBase(path: string) {
     return relativePosix(this.baseUrl.pathname, path);
@@ -154,6 +170,8 @@ export class FreshPlugin {
             `_fresh/js/${compilationId}/[id].mjs`;
           compilation.outputOptions.chunkFilename =
             `_fresh/js/${compilationId}/[id].mjs`;
+          compilation.outputOptions.assetModuleFilename =
+            `_fresh/js/${compilationId}/[hash][ext][query]`;
         }
 
         compilation.hooks.processAssets.tapPromise(
@@ -184,7 +202,7 @@ export class FreshPlugin {
 
               islandPreparer.prepare(
                 islands,
-                await import(island.filePath),
+                await this.importHelper(island.filePath),
                 file,
                 island.entryName,
                 [],
@@ -212,8 +230,8 @@ export class FreshPlugin {
                 return {
                   ...v,
                   mod: v.lazy
-                    ? () => import(v.filePath)
-                    : await import(v.filePath),
+                    ? () => this.importHelper(v.filePath)
+                    : await this.importHelper(v.filePath),
                 };
               }),
             );
