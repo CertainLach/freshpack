@@ -168,7 +168,10 @@ class DenoResolvePlugin {
           let requestIssuer: string | undefined;
           if (request.context && "issuer" in request.context) {
             const issuer = request.context.issuer;
-            assert(typeof issuer === "string" || issuer === null, "invalid context issuer");
+            assert(
+              typeof issuer === "string" || issuer === null,
+              "invalid context issuer",
+            );
             if (issuer !== "" && issuer !== null) {
               requestIssuer = issuer;
             }
@@ -300,6 +303,14 @@ export class DenoLoaderPlugin {
 
     compiler.options.externalsPresets.web = false;
     compiler.options.externalsPresets.webAsync = false;
+
+    if (!compiler.options.output.enabledLibraryTypes) {
+      compiler.options.output.enabledLibraryTypes = [];
+    }
+    if (!compiler.options.output.enabledLibraryTypes.includes("module")) {
+      compiler.options.output.enabledLibraryTypes.push("module");
+    }
+    compiler.options.output.library = { type: "module" };
 
     compiler.options.output.module = true;
     compiler.options.experiments.outputModule = true;

@@ -45,12 +45,6 @@ export async function createConfig(
       chunkFormat: "module",
       chunkLoading: "import",
       workerChunkLoading: "import",
-      // Important: islands are imported as modules
-      module: true,
-      enabledLibraryTypes: ["module"],
-      library: {
-        type: "module",
-      },
     },
     module: {
       defaultRules: [],
