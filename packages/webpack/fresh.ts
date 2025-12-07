@@ -175,7 +175,10 @@ export class FreshPlugin {
         }
 
         compilation.hooks.processAssets.tapPromise(
-          FreshPlugin.name,
+          {
+            name: FreshPlugin.name,
+            stage: compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE,
+          },
           async (assets) => {
             compilation.getAssets();
 
