@@ -64,6 +64,7 @@ export async function createConfig(
                 // Can't use name here, because babel tries to resolve the module on its own,
                 // and also is not accepting .ts files here. To be fixed on babel side?
                 [(await import("@freshpack/babel/env")).default, {}],
+                [(await import("@freshpack/babel/viteComment")).default, {}],
                 [
                   "@babel/plugin-transform-react-jsx",
                   {
