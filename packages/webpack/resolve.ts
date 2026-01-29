@@ -322,6 +322,7 @@ export class DenoLoaderPlugin {
               "jsr beforeResolve",
               resolveData,
             );
+
             try {
               // try {
               const loader = await this.loader;
@@ -344,11 +345,21 @@ export class DenoLoaderPlugin {
                 dependencyType,
               });
 
-              if (dependencyType === "url") {
-                requestRequest = "./" + requestRequest;
-              }
-              if (dependencyType === "wasm") {
+              if (
+                requestRequest.startsWith("data:") ||
+                requestRequest.startsWith("https:") ||
+                dependencyType === "wasm"
+              ) {
+                // IDK why those requests even land in this method in some circumstances, returning false
+                // here makes them being processed by the handlers below. Most probably I'm missing something,
+                // or this webpack api is not intended for such huge loaded replacements.
+                span.resolved("delegate-builtin");
                 return false;
+              }
+              if (
+                dependencyType === "url"
+              ) {
+                requestRequest = "./" + requestRequest;
               }
 
               const resolution = await simpleDenoResolve(
