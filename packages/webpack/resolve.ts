@@ -193,10 +193,13 @@ class DenoResolvePlugin {
             requestRequest,
             request.module ?? true,
           );
+          const resolvedPath = resolution.startsWith("file://")
+            ? stripFileUrl(resolution)
+            : resolution;
           return resolver.doResolve(
             target,
             Object.assign({}, request, {
-              path: resolution,
+              path: resolvedPath,
               request: undefined,
             }),
             `resolved by deno ${request.request} (from ${request.path})`,
