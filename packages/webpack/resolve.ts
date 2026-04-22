@@ -80,13 +80,11 @@ async function simpleDenoResolve(
   if (request.startsWith("/")) {
     resolution = `file://${request}`;
   } else if (request === ".") {
-    console.log("Dot request!", request, issuer);
     resolution = `file://${dirname(issuer)}`;
   } else {
     resolution = await loader.resolve(
       request,
       issuer,
-      // TODO: require?
       esm ? ResolutionMode.Import : ResolutionMode.Require,
     );
   }
@@ -266,6 +264,7 @@ export class DenoLoaderPlugin {
   }
   constructor(
     public opts: WorkspaceOptions,
+    public patchImport: (f: string, v: string) => string = (_, v) => v,
   ) {
     opts.noTranspile = false;
     opts.preserveJsx = true;
@@ -347,7 +346,8 @@ export class DenoLoaderPlugin {
 
               if (
                 requestRequest.startsWith("data:") ||
-                requestRequest.startsWith("https:") ||
+                requestRequest.startsWith("https:") &&
+                  !requestRequest.startsWith("https://jsr.io/") ||
                 dependencyType === "wasm"
               ) {
                 // IDK why those requests even land in this method in some circumstances, returning false
@@ -361,6 +361,7 @@ export class DenoLoaderPlugin {
               ) {
                 requestRequest = "./" + requestRequest;
               }
+              requestRequest = this.patchImport(requestIssuer, requestRequest);
 
               const resolution = await simpleDenoResolve(
                 loader,
@@ -369,7 +370,7 @@ export class DenoLoaderPlugin {
                 true,
               );
               span.resolved(resolution);
-              resolveData.request = resolution;
+              resolveData.request = this.patchImport(requestIssuer, resolution);
             } catch (e) {
               span.errored(e);
               throw e;
@@ -383,8 +384,10 @@ export class DenoLoaderPlugin {
             using span = resolverSpan(
               this.opts.debug,
               "node resolveForScheme",
-              resolveData,
+              resolveData.request,
             );
+            span.resolved("stubbed: not found");
+            return false;
           },
         );
         normalModuleFactory.hooks.resolveForScheme.for("jsr").tapPromise(

@@ -27,11 +27,9 @@ export function assertAbsolutePath(path: string) {
   assert(path.startsWith("/"), `path is not absolute: ${path}`);
 }
 
-export function ensureDirPath(path: string) {
+export function assertDirURL(path: URL) {
   const stat = Deno.statSync(path);
   assert(stat.isDirectory, `path is not a directory: ${path}`);
-  if (!path.endsWith("/")) path += "/";
-  return path;
 }
 export function ensureModPath(path: string) {
   if (path.endsWith("/fakeMod.ts")) return path;

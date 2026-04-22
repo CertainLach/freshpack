@@ -2,7 +2,7 @@ import { crawlFsItem, type FsRouteFileNoMod } from "@fresh/core/internal-dev";
 import Webpack from "webpack";
 import {
   assertAbsolutePath,
-  ensureDirPath,
+  assertDirURL,
   manglePath,
   stripFileUrl,
 } from "./util.ts";
@@ -72,7 +72,7 @@ export class FreshPlugin {
     public baseUrl: URL,
     public importHelper: (path: string) => Promise<Record<string, unknown>>,
   ) {
-    ensureDirPath(this.baseUrl.pathname);
+    assertDirURL(this.baseUrl);
     if (!importHelper) {
       console.warn(
         "[FreshPlugin]",
