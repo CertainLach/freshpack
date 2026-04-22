@@ -77,7 +77,9 @@ async function simpleDenoResolve(
   esm: boolean,
 ) {
   let resolution: string | undefined;
-  if (request.startsWith("/")) {
+  if (request.startsWith("/") && issuer.startsWith("https://")) {
+    resolution = new URL(request, new URL(issuer).origin).href;
+  } else if (request.startsWith("/")) {
     resolution = `file://${request}`;
   } else if (request === ".") {
     resolution = `file://${dirname(issuer)}`;
@@ -94,8 +96,16 @@ async function simpleDenoResolve(
     resolution.startsWith("https:")
   ) {
     // PASS: https loader
+  } else if (resolution.startsWith("file:")) {
+    if (issuer.startsWith("https://")) {
+      // PASS: Disambiguate origin-relative,
+      // we don't want to convert /home/user/.cache/deno/npm/.../file.ts imported from
+      // https://esm.sh to become https://esm.sh/home/user/...
+    } else {
+      resolution = stripFileUrl(resolution);
+    }
   } else {
-    resolution = stripFileUrl(resolution);
+    assert(false, `unexpected resolution: ${resolution}`);
   }
   return resolution;
 }
@@ -387,7 +397,7 @@ export class DenoLoaderPlugin {
               resolveData.request,
             );
             span.resolved("stubbed: not found");
-            return false;
+            return;
           },
         );
         normalModuleFactory.hooks.resolveForScheme.for("jsr").tapPromise(
@@ -447,12 +457,15 @@ export class DenoLoaderPlugin {
               const loader = await this.loader;
               const requestRequest = data.request;
               if (requestRequest.startsWith("/")) {
-                span.resolved("pre-resolved file import", requestRequest);
-                await fillResourceData(
-                  resourceData,
-                  loader,
-                  ensureFileUrl(requestRequest),
+                const requestIssuer = data.contextInfo.issuer;
+                assert(
+                  requestIssuer && requestIssuer.startsWith("https://"),
+                  `unexpected /-prefixed request without https:// issuer: ${requestRequest}`,
                 );
+                const issuerUrl = new URL(requestIssuer);
+                const resolved = new URL(requestRequest, issuerUrl.origin);
+                span.resolved("origin-relative url", resolved.href);
+                await fillResourceData(resourceData, loader, resolved);
                 return true;
               } else {
                 const requestIssuer = data.contextInfo.issuer;
@@ -514,15 +527,3 @@ export class DenoLoaderPlugin {
     );
   }
 }
-
-// Workaround for https://github.com/webpack/watchpack/pull/226
-const origConsoleError = console.error;
-console.error = (...args) => {
-  if (
-    args.length === 1 && typeof args[0] === "string" &&
-    args[0].startsWith("Watchpack Error ") &&
-    (args[0].includes("ENOTDIR: not a directory, readdir ") ||
-      args[0].includes("NotADirectory: Not a directory (os error 20): lstat "))
-  ) return;
-  origConsoleError(...args);
-};

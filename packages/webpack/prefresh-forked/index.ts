@@ -89,6 +89,7 @@ export class DenoPreactRefreshPlugin {
       );
     }
 
+    const providePlugin = new Webpack.ProvidePlugin(provide);
     providePlugin.apply(compiler);
     const dependency = Webpack.EntryPlugin.createDependency(
       "@prefresh/core",
