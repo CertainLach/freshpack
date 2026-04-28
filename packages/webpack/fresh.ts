@@ -125,16 +125,20 @@ export class FreshPlugin {
         // Ensure hot chunks are resolved from correct path, they can't contain compilationId in name
         compilation.outputOptions.publicPath = "/";
         {
-          // Fresh has no native support for content-addressed static assets, instead there is such paths.
-          // We also don't need webpack to use contentHash, as the paths are already made unique.
-          // TODO: It would be better to use content-addressing for production updates and better CDN support,
-          // but support for that needs to be added upstream.
-          compilation.outputOptions.filename =
-            `_fresh/js/${compilationId}/[id].mjs`;
-          compilation.outputOptions.chunkFilename =
-            `_fresh/js/${compilationId}/[id].mjs`;
+          // Chunks are content-addressed in prod, and have readable names using standard fresh cache pruning in dev
+          if (compiler.options.mode === "production") {
+            compilation.outputOptions.filename = `_fresh/js/c/[chunkhash].mjs`;
+            compilation.outputOptions.chunkFilename =
+              `_fresh/js/c/[chunkhash].mjs`;
+          } else {
+            compilation.outputOptions.filename =
+              `_fresh/js/${compilationId}/[id].mjs`;
+            compilation.outputOptions.chunkFilename =
+              `_fresh/js/${compilationId}/[id].mjs`;
+          }
+          // Assets are always content-addressed
           compilation.outputOptions.assetModuleFilename =
-            `_fresh/js/${compilationId}/[hash][ext][query]`;
+            `_fresh/js/c/[hash][ext][query]`;
         }
 
         compilation.hooks.processAssets.tapPromise(
