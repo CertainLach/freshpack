@@ -399,8 +399,10 @@ export class DenoLoaderPlugin {
               "node resolveForScheme",
               resolveData.request,
             );
-            span.resolved("stubbed: not found");
-            return;
+            resourceData.path = false as any;
+            resourceData.data.path = false;
+            span.resolved("stubbed: empty module");
+            return true;
           },
         );
         normalModuleFactory.hooks.resolveForScheme.for("jsr").tapPromise(
@@ -491,6 +493,12 @@ export class DenoLoaderPlugin {
         );
         const hooks = Webpack.NormalModule.getCompilationHooks(compilation);
 
+        hooks.readResourceForScheme.for("node").tapAsync(
+          "JsrPlugin",
+          async (_resource, _module, cb) => {
+            cb(null, Buffer.from("module.exports = {};"));
+          },
+        );
         hooks.readResourceForScheme.for("jsr").tapPromise(
           "JsrPlugin",
           async (resource, module) => {
