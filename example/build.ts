@@ -16,9 +16,12 @@ export async function createConfig(
   return {
     mode,
     target: "web",
-    // Needs to be empty to disable default entry creation, fresh plugin creates its own entries
-    // automatically.
-    entry: {},
+    // Note: if you don't want to use webpack css support, you should not remove `entry` key completely,
+    // instead replace it with `entry: {}` so webpack does not use its own default entry handling.
+    // Island entries are created automatically, no need to specify them here.
+    entry: {
+      style: "./client/style.css",
+    },
     optimization: {
       runtimeChunk: "single",
       usedExports: true,
@@ -27,17 +30,10 @@ export async function createConfig(
         chunks: "all",
         maxInitialRequests: Infinity,
         maxAsyncRequests: Infinity,
-        cacheGroups: {
-          // defaultVendor doesn't work with deno, if you want assets to be grouped - it needs to be done explicitly
-          preact: {
-            test: /(preact|prefresh|mobx|fresh)/,
-            enforce: true,
-            chunks: "all",
-            maxInitialRequests: Infinity,
-            maxAsyncRequests: Infinity,
-          },
-        },
       },
+    },
+    experiments: {
+      css: true,
     },
     output: {
       clean: true,
@@ -46,12 +42,17 @@ export async function createConfig(
       workerChunkLoading: "import",
     },
     module: {
-      defaultRules: [],
       rules: [
         {
+          test: /\.(css)$/,
+          type: "css",
+        },
+
+        {
           type: "javascript/auto",
-          // Required for JSR transpilation, as those are in https scheme
           scheme: () => true,
+          test: (f) => /\.(?:js|mjs|cjs|ts|tsx)$/.test(f),
+          // Required for JSR transpilation, as those are in https scheme
           use: {
             loader: "babel-loader",
             options: {

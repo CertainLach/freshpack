@@ -1,12 +1,16 @@
 = Freshpack
 
-Freshpack builder and development server based on webpack (contrary to default esbuild/vite builders)
+Freshpack builder and development server based on webpack (contrary to default esbuild/vite builders).
+
+Features HMR, webpack plugin support, works without `node_modules`, and should support all the features fresh supports.
 
 == Implementation details
 
 Fresh schema for file caching is used instead of webpack content-addressed thing.
 
 == Example
+
+An example is prepared in `./example` subdirectory.
 
 Start dev server:
 
@@ -57,12 +61,8 @@ For production:
 ----
 # Generate _fresh directory
 deno task build
-# Run production server
+# Run production server (requires built _fresh directory)
 deno task main
 # Compile everything into a single executable
 deno task compile
 ----
-
-== TODO
-
-Listen for hmr event on server and cause reloads on server, but only for things that the client is unable to reload themselves (E.g changes in routes should cause client to reload page, but change of islands should not, as client-side HMR will work in that case)

@@ -9,7 +9,8 @@
     "members": [
       "packages/runtime",
       "packages/babel",
-      "packages/webpack"
+      "packages/webpack",
+      "example"
     ]
   },
   "imports": {
