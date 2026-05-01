@@ -113,6 +113,8 @@ export class FreshPlugin {
     }
 
     (new UnmapPlugin()).apply(compiler);
+    // Some @std and other packages detect deno on presence of Deno global, dead-code-elimnate this stuff
+    (new Webpack.DefinePlugin({ Deno: "undefined" })).apply(compiler);
 
     compiler.hooks.make.tapPromise(
       FreshPlugin.name,
