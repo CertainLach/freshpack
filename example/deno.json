@@ -11,5 +11,6 @@
 		"~islands/": "./islands/",
 		"~utils": "./utils.ts"
 	},
-	"exports": {}
+	"exports": {},
+	"publish": false
 }
