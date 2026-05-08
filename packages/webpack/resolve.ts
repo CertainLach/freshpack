@@ -360,8 +360,7 @@ export class DenoLoaderPlugin {
               if (
                 requestRequest.startsWith("data:") ||
                 requestRequest.startsWith("https:") &&
-                  !requestRequest.startsWith("https://jsr.io/") ||
-                dependencyType === "wasm"
+                  !requestRequest.startsWith("https://jsr.io/")
               ) {
                 // IDK why those requests even land in this method in some circumstances, returning false
                 // here makes them being processed by the handlers below. Most probably I'm missing something,
