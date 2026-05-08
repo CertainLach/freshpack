@@ -13,7 +13,9 @@ function isSafeExport(key: string) {
 }
 
 export function registerExports(moduleExports: any, moduleId: string) {
-  if (typeof self !== "undefined") {
+  if (
+    typeof self !== "undefined" && typeof self["__PREFRESH__"] !== "undefined"
+  ) {
     self["__PREFRESH__"].register(moduleExports, moduleId + " %exports%");
     if (moduleExports == null || typeof moduleExports !== "object") return;
 

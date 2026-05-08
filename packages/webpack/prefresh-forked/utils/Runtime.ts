@@ -32,7 +32,7 @@ export class PrefreshRuntimeModule extends Webpack.RuntimeModule {
             runtimeTemplate.basicFunction(
               "moduleObject, moduleExports, webpackRequire",
               [
-                'if (typeof self !== "undefined") {',
+                `if (typeof self !== "undefined" && typeof self.${NAMESPACE} !== "undefined") {`,
                 Webpack.Template.indent([
                   `${declare} prevRefreshReg = self.$RefreshReg$;`,
                   `${declare} prevRefreshSig = self.$RefreshSig$;`,
