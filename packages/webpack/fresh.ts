@@ -129,9 +129,9 @@ export class FreshPlugin {
         {
           // Chunks are content-addressed in prod, and have readable names using standard fresh cache pruning in dev
           if (compiler.options.mode === "production") {
-            compilation.outputOptions.filename = `_fresh/js/c/[chunkhash].mjs`;
+            compilation.outputOptions.filename = `_fresh/js/c/[contenthash].mjs`;
             compilation.outputOptions.chunkFilename =
-              `_fresh/js/c/[chunkhash].mjs`;
+              `_fresh/js/c/[contenthash].mjs`;
           } else {
             compilation.outputOptions.filename =
               `_fresh/js/${compilationId}/[id].mjs`;
