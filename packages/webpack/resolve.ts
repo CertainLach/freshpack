@@ -8,7 +8,7 @@ import {
 import { assert, unreachable } from "@std/assert";
 import Webpack, { type Compiler } from "webpack";
 import { Buffer } from "node:buffer";
-import { ensureFileUrl, ensureModPath, stripFileUrl } from "./util.ts";
+import { ensureModPath, stripFileUrl } from "./util.ts";
 import { dirname } from "@std/path";
 
 function resolverSpan(
@@ -17,7 +17,7 @@ function resolverSpan(
   ...args: unknown[]
 ) {
   let isResolved: undefined | unknown[];
-  let timeoutId: number | undefined = setTimeout(() => {
+  let timeoutId: NodeJS.Timeout | undefined = setTimeout(() => {
     console.error("[RESOLVE]", "possibly stuck at", name, ...args);
     if (isResolved !== undefined) {
       console.error("         ", "...but it was resolved:", ...isResolved);

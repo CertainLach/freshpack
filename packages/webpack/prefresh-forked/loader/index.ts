@@ -1,8 +1,5 @@
 import type Webpack from "webpack";
-
-const runtimeText = await fetch(new URL("./runtime.js", import.meta.url)).then(
-  (res) => res.text(),
-);
+import runtimeText from "./runtime.js" with { type: "text" };
 
 export default function RefreshHotLoader(
   this: any,
