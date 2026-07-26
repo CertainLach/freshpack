@@ -1,5 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
-import { Head } from "@fresh/core/runtime";
+import { Head } from "@freshpack/core/runtime";
 
 export function TemplateIsland() {
   const [ready, setReady] = useState(false);

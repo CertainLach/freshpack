@@ -5,7 +5,7 @@
  * and has no element with `f-client-nav="true"`. The full Fresh client runtime
  * (fresh-runtime.js + inline boot script) must only appear when actually needed.
  */
-import { App } from "@fresh/core";
+import { App } from "@freshpack/core";
 import { signal } from "@preact/signals";
 import { Counter } from "./fixtures_islands/Counter.tsx";
 import { expect } from "@std/expect";

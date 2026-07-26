@@ -1,9 +1,8 @@
 {
-  "name": "@fresh/examples",
+  "name": "@freshpack/examples",
   "version": "1.0.1",
   "license": "MIT",
   "imports": {
-    "fresh": "jsr:@fresh/core@^2.3.3",
     "preact": "npm:preact@^10.29.7",
     "@preact/signals": "npm:@preact/signals@^2.10.0"
   },

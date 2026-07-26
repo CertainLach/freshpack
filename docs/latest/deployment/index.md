@@ -16,10 +16,6 @@ Then run the build:
 deno task build
 ```
 
-> [info]: This runs [vite](/docs/advanced/vite) build under the hood. If you're
-> migrating from Fresh 1.x and still have a `dev.ts` file, see the
-> [migration guide](/docs/migration-guide) for updating your tasks.
-
 Once completed, it will have created a `_fresh` folder in the project directory
 which contains the optimized assets.
 

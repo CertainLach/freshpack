@@ -74,7 +74,7 @@ export async function initProject(
     skipInstall?: boolean | null;
   } = {},
 ): Promise<void> {
-  const freshVersion = await getLatestVersion("@fresh/core", FRESH_VERSION);
+  const freshVersion = await getLatestVersion("@freshpack/core", FRESH_VERSION);
 
   if (flags.help || flags.h) {
     console.log(HELP_TEXT);

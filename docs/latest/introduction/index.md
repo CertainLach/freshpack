@@ -10,7 +10,7 @@ Standards. It's designed for building high-quality, performant, and personalized
 web applications.
 
 ```tsx main.ts
-import { App } from "fresh";
+import { App } from "@fresh/core";
 
 const app = new App()
   .get("/", () => new Response("hello world"))
@@ -24,7 +24,7 @@ app.listen();
 Create a new Fresh app by running:
 
 ```sh Terminal
-deno run -Ar jsr:@fresh/init
+deno run -Ar jsr:@freshpack/init
 ```
 
 ## Features

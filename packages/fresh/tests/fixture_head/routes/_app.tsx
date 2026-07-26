@@ -1,4 +1,4 @@
-import type { PageProps } from "@fresh/core";
+import type { PageProps } from "@freshpack/core";
 
 export default function Page({ Component }: PageProps) {
   return (

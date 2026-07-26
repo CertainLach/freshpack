@@ -1,4 +1,4 @@
-import { App, staticFiles } from "@fresh/core";
+import { App, staticFiles } from "@freshpack/core";
 import { BlockIsland } from "./fixtures_islands/BlockIsland.tsx";
 import { Counter } from "./fixtures_islands/Counter.tsx";
 import { IslandInIsland } from "./fixtures_islands/IslandInIsland.tsx";

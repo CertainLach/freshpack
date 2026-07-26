@@ -1,9 +1,9 @@
 import { expect } from "@std/expect";
 import { Context } from "./context.ts";
-import { App } from "@fresh/core";
-import { asset } from "@fresh/core/runtime";
+import { App } from "@freshpack/core";
+import { asset } from "@freshpack/core/runtime";
 import { FakeServer } from "./test_utils.ts";
-import { BUILD_ID } from "@fresh/build-id";
+import { BUILD_ID } from "@freshpack/build-id";
 import { parseHtml } from "../tests/test_utils.tsx";
 
 Deno.test("FreshReqContext.prototype.redirect", () => {

@@ -4,7 +4,7 @@ import { fsItemsToCommands, type FsRouteFile } from "./fs_routes.ts";
 import type { ServerIslandRegistry } from "./context.ts";
 import type { AnyComponent } from "preact";
 import { UniqueNamer } from "./utils.ts";
-import { setBuildId } from "@fresh/build-id";
+import { setBuildId } from "@freshpack/build-id";
 import { setContentHashMap } from "./runtime/shared_internal.ts";
 
 export interface FileSnapshot {

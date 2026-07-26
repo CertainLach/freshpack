@@ -1,5 +1,5 @@
 import type { ComponentChildren, VNode } from "preact";
-import { BUILD_ID } from "@fresh/build-id";
+import { BUILD_ID } from "@freshpack/build-id";
 import { assetInternal, assetSrcSetInternal } from "./shared_internal.ts";
 
 export { HttpError } from "../error.ts";

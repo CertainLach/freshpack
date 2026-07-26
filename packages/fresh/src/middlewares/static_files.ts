@@ -1,6 +1,6 @@
 import type { Middleware } from "./mod.ts";
 import { ASSET_CACHE_BUST_KEY } from "../constants.ts";
-import { BUILD_ID } from "@fresh/build-id";
+import { BUILD_ID } from "@freshpack/build-id";
 import { tracer } from "../otel.ts";
 import { getBuildCache } from "../context.ts";
 

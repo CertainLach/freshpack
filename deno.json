@@ -5,15 +5,8 @@
   ],
   "tasks": {
     "test": "deno test -A --parallel",
-    "www": "deno task --cwd=www dev",
-    "build-www": "deno task --cwd=www build",
-    "screenshot": "deno run -A www/utils/screenshot.ts",
     "check:types": "deno check --allow-import",
-    "check:docs": "deno run -A tools/check_docs.ts",
-    "ok": "deno fmt --check && deno lint && deno task check:types && deno task test",
-    "check:links": "deno run -A tools/check_links.ts",
-    "test:www": "deno test -A www/main_test.*",
-    "release": "deno run -A tools/release.ts"
+    "ok": "deno fmt --check && deno lint && deno task check:types && deno task test"
   },
   "exclude": [
     "**/_fresh/*",
@@ -25,10 +18,7 @@
       "src/**",
       "deno.json",
       "README.md",
-      "LICENSE",
-      "www/static/fresh-badge.svg",
-      "www/static/fresh-badge-dark.svg",
-      "*.todo"
+      "LICENSE"
     ],
     "exclude": [
       "**/*_test.*",
@@ -106,10 +96,5 @@
         "no-console"
       ]
     }
-  },
-  "fmt": {
-    "exclude": [
-      "./www/static/**/*.svg"
-    ]
   }
 }

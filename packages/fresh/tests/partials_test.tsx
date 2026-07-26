@@ -1,5 +1,5 @@
-import { App, staticFiles } from "@fresh/core";
-import { Partial } from "@fresh/core/runtime";
+import { App, staticFiles } from "@freshpack/core";
+import { Partial } from "@freshpack/core/runtime";
 import {
   ALL_ISLAND_DIR,
   assertMetaContent,
