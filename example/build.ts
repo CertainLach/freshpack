@@ -10,9 +10,9 @@ import {
 
 const DEBUG_RESOLVED = false;
 
-export async function createConfig(
+export function createConfig(
   mode: "development" | "production",
-): Promise<Webpack.Configuration> {
+): Webpack.Configuration {
   return {
     mode,
     target: "web",
@@ -46,36 +46,6 @@ export async function createConfig(
         {
           test: /\.(css)$/,
           type: "css",
-        },
-
-        {
-          type: "javascript/auto",
-          scheme: () => true,
-          test: (f) => /\.(?:js|mjs|cjs|ts|tsx)$/.test(f),
-          // Required for JSR transpilation, as those are in https scheme
-          use: {
-            loader: "babel-loader",
-            options: {
-              targets: "defaults",
-              presets: [
-                ["@babel/preset-env", { modules: false }],
-                ["@babel/preset-typescript"],
-              ],
-              plugins: [
-                // Can't use name here, because babel tries to resolve the module on its own,
-                // and also is not accepting .ts files here. To be fixed on babel side?
-                [(await import("@freshpack/babel/env")).default, {}],
-                [(await import("@freshpack/babel/viteComment")).default, {}],
-                [
-                  "@babel/plugin-transform-react-jsx",
-                  {
-                    "runtime": "automatic",
-                    "importSource": "preact",
-                  },
-                ],
-              ],
-            },
-          },
         },
       ],
     },
@@ -116,8 +86,7 @@ export async function createConfig(
 }
 
 if (import.meta.main) {
-  Deno.env.set("NODE_ENV", "production");
-  const config = await createConfig("production");
+  const config = createConfig("production");
   const webpack = Webpack(config)!;
   webpack.run((err, v) => {
     if (err) return console.error(err);

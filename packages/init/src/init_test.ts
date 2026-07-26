@@ -1,9 +1,5 @@
 import { expect } from "@std/expect";
-import {
-  CONFIRM_VSCODE_MESSAGE,
-  HELP_TEXT,
-  initProject,
-} from "./init.ts";
+import { CONFIRM_VSCODE_MESSAGE, HELP_TEXT, initProject } from "./init.ts";
 import * as path from "@std/path";
 import { getStdOutput, withBrowser } from "../../fresh/tests/test_utils.tsx";
 import { waitForText } from "../../fresh/tests/test_utils.tsx";

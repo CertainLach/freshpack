@@ -9,7 +9,7 @@ import {
 import { createConfig } from "./build.ts";
 
 if (import.meta.main) {
-  const config = await createConfig("development");
+  const config = createConfig("development");
   const webpack = Webpack(config)!;
   app
     // webpackHandler combines HMR, devserver middleware, and updates app's build cache...

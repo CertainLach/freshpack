@@ -128,13 +128,17 @@ export function fsItemsToCommands<State>(
       }
       case CommandType.NotFound: {
         const { handlers, mod } = validateFsMod<State>(filePath, rawMod, type);
-        commands.push(newNotFoundCmd({
-          config: mod.config,
-          component: mod.default,
-          css: mod.css,
-          // deno-lint-ignore no-explicit-any
-          handler: handlers as any ?? undefined,
-        }, pattern, true));
+        commands.push(newNotFoundCmd(
+          {
+            config: mod.config,
+            component: mod.default,
+            css: mod.css,
+            // deno-lint-ignore no-explicit-any
+            handler: handlers as any ?? undefined,
+          },
+          pattern,
+          true,
+        ));
         continue;
       }
       case CommandType.App: {

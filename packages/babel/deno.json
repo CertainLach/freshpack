@@ -1,9 +1,0 @@
-{
-  "name": "@freshpack/babel",
-  "version": "0.2.0",
-  "license": "MIT",
-  "exports": {
-    "./env": "./env.ts",
-    "./viteComment": "./viteComment.ts"
-  }
-}

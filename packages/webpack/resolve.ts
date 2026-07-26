@@ -10,6 +10,13 @@ import Webpack, { type Compiler } from "webpack";
 import { Buffer } from "node:buffer";
 import { ensureModPath, stripFileUrl } from "./util.ts";
 import { dirname } from "@std/path";
+import { defineRequire } from "./requireHook.ts";
+import { registerDenoLoader } from "./transpileLoader.ts";
+
+const internalTranspileLoader = defineRequire(
+  "@freshpack/webpack/internal-deno-transpile-loader",
+  await import("./transpileLoader.ts"),
+);
 
 function resolverSpan(
   logSuccess: boolean | undefined,
@@ -271,6 +278,7 @@ function ensurePluginList(
 
 export class DenoLoaderPlugin {
   workspace: Workspace;
+  #transpileLoaderId: number;
   #loader?: Promise<Loader>;
   get loader(): Promise<Loader> {
     return (this.#loader ??= this.workspace.createLoader());
@@ -280,9 +288,10 @@ export class DenoLoaderPlugin {
     public patchImport: (f: string, v: string) => string = (_, v) => v,
   ) {
     opts.noTranspile = false;
-    opts.preserveJsx = true;
+    opts.preserveJsx = false;
     opts.platform = "browser";
     this.workspace = new Workspace(opts);
+    this.#transpileLoaderId = registerDenoLoader(() => this.loader);
   }
   apply(compiler: Compiler) {
     if (compiler.options.resolve.plugins === undefined) {
@@ -317,15 +326,31 @@ export class DenoLoaderPlugin {
     compiler.options.output.module = true;
     compiler.options.experiments.outputModule = true;
 
+    // Deno provides its own type-stripping when no ts loader is present
+    // It is not required since deno-loader handles typescript.
+    compiler.options.experiments.typescript = false;
+
     compiler.hooks.compilation.tap(
       "JsrPlugin",
       (compilation, { normalModuleFactory }) => {
-        // normalModuleFactory.hooks.afterResolve.tap(
-        //   { name: "JsrPlugin", stage: -100000 },
-        //   (a) => {
-        //     console.log("after resolve", a);
-        //   },
-        // );
+        normalModuleFactory.hooks.afterResolve.tap(
+          "JsrPlugin",
+          ({ createData: data }) => {
+            const resource = data.resource;
+            if (
+              resource === undefined || resource.includes("://") ||
+              !/\.[cm]?[jt]sx?$/.test(resource)
+            ) {
+              return;
+            }
+            data.loaders!.push({
+              loader: internalTranspileLoader,
+              options: { id: this.#transpileLoaderId },
+              ident: null,
+              type: null,
+            });
+          },
+        );
         normalModuleFactory.hooks.beforeResolve.tapPromise(
           "JsrPlugin",
           async (resolveData) => {
