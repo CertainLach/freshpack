@@ -1,7 +1,7 @@
 /* This server entry point uses client prebuilt witn build.ts file */
 
 import { app } from "./app.ts";
-import { setBuildCache } from "@fresh/core/internal";
+import { setBuildCache } from "@freshpack/core/internal";
 
 if (import.meta.main) {
   const cache = (await import("./dist/cache.mjs")).default;

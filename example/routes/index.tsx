@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals";
-import { Head } from "@fresh/core/runtime";
+import { Head } from "@freshpack/core/runtime";
 import { define } from "~utils";
 import Counter from "~islands/Counter.tsx";
 

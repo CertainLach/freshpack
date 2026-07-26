@@ -1,4 +1,4 @@
-import { asset } from "@fresh/core/runtime";
+import { asset } from "@freshpack/core/runtime";
 import { define } from "~utils";
 
 export default define.page(function App({ Component }) {

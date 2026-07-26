@@ -1,0 +1,30 @@
+{
+  "name": "@freshpack/core",
+  "version": "2.3.3",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/mod.ts",
+    "./runtime": "./src/runtime/shared.ts",
+    "./runtime-client": "./src/runtime/client/mod.ts",
+    "./dev": "./src/dev/mod.ts",
+    "./compat": "./src/compat.ts",
+    "./internal": "./src/internals.ts",
+    "./internal-dev": "./src/internals_dev.ts"
+  },
+  "imports": {
+    "@opentelemetry/api": "npm:@opentelemetry/api@^1.9.1",
+    "@std/encoding": "jsr:@std/encoding@^1.0.11",
+    "@std/fmt": "jsr:@std/fmt@^1.0.10",
+    "@std/fs": "jsr:@std/fs@^1.0.24",
+    "@std/html": "jsr:@std/html@^1.0.7",
+    "@std/http": "jsr:@std/http@^1.1.2",
+    "@std/jsonc": "jsr:@std/jsonc@^1.0.2",
+    "@std/media-types": "jsr:@std/media-types@^1.1.0",
+    "@std/net": "jsr:@std/net@^1.0.6",
+    "@std/path": "jsr:@std/path@^1.1.6",
+    "@std/semver": "jsr:@std/semver@^1.0.8",
+    "@std/uuid": "jsr:@std/uuid@^1.1.1",
+    "preact": "npm:preact@^10.29.7",
+    "preact-render-to-string": "npm:preact-render-to-string@^6.7.0"
+  }
+}

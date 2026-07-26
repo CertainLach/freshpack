@@ -1,4 +1,4 @@
-import type { IslandPreparer, setBuildCache } from "@fresh/core/internal";
+import type { IslandPreparer, setBuildCache } from "@freshpack/core/internal";
 import type * as Webpack from "webpack";
 
 export type OriginalBuildCache<State> = Parameters<

@@ -1,6 +1,6 @@
 /* Client entrypoint. Unlike fresh builder, is explicit, and allows to customize what the client is going to do */
 
-import { boot } from "@fresh/core/runtime-client";
+import { boot } from "@freshpack/core/runtime-client";
 
 if (Deno.env.get("NODE_ENV") !== "production") {
   // For preact devtools

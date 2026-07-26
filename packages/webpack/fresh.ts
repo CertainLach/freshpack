@@ -1,4 +1,7 @@
-import { crawlFsItem, type FsRouteFileNoMod } from "@fresh/core/internal-dev";
+import {
+  crawlFsItem,
+  type FsRouteFileNoMod,
+} from "@freshpack/core/internal-dev";
 import Webpack from "webpack";
 import {
   assertAbsolutePath,
@@ -7,7 +10,7 @@ import {
   stripFileUrl,
 } from "./util.ts";
 import { assert } from "@std/assert";
-import { IslandPreparer, ProdBuildCache } from "@fresh/core/internal";
+import { IslandPreparer, ProdBuildCache } from "@freshpack/core/internal";
 import {
   extname as extnamePosix,
   join as joinPosix,
@@ -129,7 +132,8 @@ export class FreshPlugin {
         {
           // Chunks are content-addressed in prod, and have readable names using standard fresh cache pruning in dev
           if (compiler.options.mode === "production") {
-            compilation.outputOptions.filename = `_fresh/js/c/[contenthash].mjs`;
+            compilation.outputOptions.filename =
+              `_fresh/js/c/[contenthash].mjs`;
             compilation.outputOptions.chunkFilename =
               `_fresh/js/c/[contenthash].mjs`;
           } else {
@@ -152,7 +156,7 @@ export class FreshPlugin {
             compilation.getAssets();
 
             const cacheOut: JsRaw[] = [
-              js`import{IslandPreparer,ProdBuildCache}from"@fresh/core/internal"`,
+              js`import{IslandPreparer,ProdBuildCache}from"@freshpack/core/internal"`,
               js`const islands=new Map()`,
               js`const islandPreparer=new IslandPreparer()`,
             ];

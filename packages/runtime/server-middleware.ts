@@ -1,5 +1,5 @@
-import type { App, Context, Middleware } from "@fresh/core";
-import { setBuildCache } from "@fresh/core/internal";
+import type { App, Context, Middleware } from "@freshpack/core";
+import { setBuildCache } from "@freshpack/core/internal";
 import type Webpack from "webpack";
 import { assertFreshCompilation } from "@freshpack/webpack/fresh";
 import { assertUnmapCompilation } from "@freshpack/webpack/unmap";

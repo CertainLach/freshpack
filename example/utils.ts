@@ -1,6 +1,6 @@
 /* Same state utils as in standard fresh example */
 
-import { createDefine } from "@fresh/core";
+import { createDefine } from "@freshpack/core";
 
 export interface State {
   shared: string;

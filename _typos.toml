@@ -1,0 +1,8 @@
+[files]
+extend-exclude = [
+  "packages/fresh/tests/fixture_partials/routes/scroll_restoration/index.tsx",
+  "packages/fresh/tests/lorem_ipsum.txt",
+]
+
+[default]
+extend-ignore-identifiers-re = ["Fixel"]
