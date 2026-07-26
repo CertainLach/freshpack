@@ -24,10 +24,10 @@ await app.listen();
 ## Usage: App1 or App2 example
 
 ```tsx
-import { App } from "fresh";
+import { App } from "@freshpack/core";
 // Import the example apps
-import { app1 } from "jsr:@fresh/examples/app1";
-import { app2 } from "jsr:@fresh/examples/app2";
+import { app1 } from "@freshpack/examples/app1";
+import { app2 } from "@freshpack/examples/app2";
 
 export const app = new App({ root: import.meta.url })
   .use(staticFiles());

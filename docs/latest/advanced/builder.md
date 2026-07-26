@@ -76,8 +76,6 @@ const builder = new Builder();
 builder.registerIsland("path/to/my/Island.tsx");
 // File urls work too
 builder.registerIsland("file:///path/to/my/Island.tsx");
-// Also islands from jsr
-builder.registerIsland("jsr:@marvinh-test/fresh-island");
 ```
 
 ## Adding build plugins

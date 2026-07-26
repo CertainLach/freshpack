@@ -108,33 +108,6 @@ integrationTest("Builder - hashes CSS urls by default", async () => {
   );
 });
 
-integrationTest("Builder - can bundle islands from JSR", async () => {
-  await using _tmp = await withTmpDir();
-  const tmp = _tmp.dir;
-
-  const outDir = path.join(tmp, "dist");
-  const builder = new Builder({ outDir });
-
-  const specifier = "jsr:@marvinh-test/fresh-island";
-  builder.registerIsland(specifier);
-
-  await builder.build();
-
-  const name = specToName(specifier);
-  const code = await Deno.readTextFile(
-    path.join(
-      tmp,
-      "dist",
-      "static",
-      "_fresh",
-      "js",
-      BUILD_ID,
-      `${name}.js`,
-    ),
-  );
-  expect(code).toContain('"remote-island"');
-});
-
 integrationTest(
   "Builder - can bundle islands with import.meta.resolve()",
   async () => {

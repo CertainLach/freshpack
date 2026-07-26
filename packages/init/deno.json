@@ -1,18 +1,23 @@
 {
   "name": "@freshpack/init",
-  "version": "2.3.3",
+  "version": "2.4.0",
   "license": "MIT",
   "exports": {
     ".": "./src/mod.ts",
     "./create": "./src/create.ts"
   },
-  "exclude": ["**/tmp/*"],
+  "exclude": [
+    "**/tmp/*"
+  ],
   "publish": {
     "include": [
       "src/**/*.ts",
       "deno.json",
       "README.md"
     ],
-    "exclude": ["**/*_test.*", "*.todo"]
+    "exclude": [
+      "**/*_test.*",
+      "*.todo"
+    ]
   }
 }

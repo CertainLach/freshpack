@@ -10,7 +10,7 @@ disk for optimal performance with
 headers.
 
 ```ts main.ts
-import { staticFiles } from "fresh";
+import { staticFiles } from "@freshpack/core";
 
 const app = new App()
   .use(staticFiles());

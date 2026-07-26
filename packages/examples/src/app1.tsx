@@ -4,7 +4,7 @@
  * @module
  */
 
-import { App } from "fresh";
+import { App } from "@freshpack/core";
 import { Doc } from "./shared.tsx";
 
 /** App that renders a sample HTML document */

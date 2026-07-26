@@ -16,7 +16,7 @@ test assumes the `State` object in `utils.ts` has `text` property.
 
 ```ts tests/middleware.test.ts
 import { expect } from "@std/expect";
-import { App } from "fresh";
+import { App } from "@freshpack/core";
 import { define, type State } from "../utils.ts";
 
 const middleware = define.middleware((ctx) => {
@@ -49,7 +49,7 @@ Both the [app wrapper](/docs/advanced/app-wrapper) component and
 
 ```tsx tests/appWrapper.test.tsx
 import { expect } from "@std/expect";
-import { App } from "fresh";
+import { App } from "@freshpack/core";
 import { define, type State } from "../utils.ts";
 
 const AppWrapper = define.layout(function AppWrapper({ Component }) {
@@ -84,7 +84,7 @@ Same can be done for layouts.
 
 ```tsx tests/layout.test.tsx
 import { expect } from "@std/expect";
-import { App } from "fresh";
+import { App } from "@freshpack/core";
 import { define, type State } from "../utils.ts";
 
 const MyLayout = define.layout(function MyLayout({ Component }) {
@@ -119,7 +119,7 @@ handler:
 
 ```ts tests/routes.test.ts
 import { expect } from "@std/expect";
-import { App } from "fresh";
+import { App } from "@freshpack/core";
 import { type State } from "../utils.ts";
 
 // Import actual route handlers
@@ -150,7 +150,7 @@ to use JSX:
 
 ```tsx tests/island-ssr.test.tsx
 import { expect } from "@std/expect";
-import { App } from "fresh";
+import { App } from "@freshpack/core";
 import { useSignal } from "@preact/signals";
 import { type State } from "../utils.ts";
 import Counter from "../islands/Counter.tsx";

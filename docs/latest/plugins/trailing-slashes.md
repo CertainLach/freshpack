@@ -7,7 +7,7 @@ end with a slash character or will never end with one. It redirects the user's
 request respectively.
 
 ```ts main.ts
-import { trailingSlashes } from "fresh";
+import { trailingSlashes } from "@freshpack/core";
 
 const app = new App()
   .use(trailingSlashes("never"))
@@ -17,7 +17,7 @@ const app = new App()
 Always append a trailing slash:
 
 ```ts main.ts
-import { trailingSlashes } from "fresh";
+import { trailingSlashes } from "@freshpack/core";
 
 const app = new App()
   .use(trailingSlashes("always"))

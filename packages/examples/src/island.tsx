@@ -3,8 +3,8 @@
  *
  * @example
  * ```tsx
- * import { App } from "fresh";
- * import { DemoIsland } from "jsr:@fresh/examples/island";
+ * import { App } from "@freshpack/core";
+ * import { DemoIsland } from "@freshpack/examples/island";
  *
  * const app = new App();
  *
