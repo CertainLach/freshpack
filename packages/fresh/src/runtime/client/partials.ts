@@ -194,8 +194,37 @@ document.addEventListener("click", async (e) => {
           await fetchPartials(nextUrl, partialUrl, true);
           updateLinks(nextUrl);
         });
-        if (!el.hasAttribute(PARTIAL_NO_SCROLL_ATTR)) {
+        if (el.hasAttribute(PARTIAL_NO_SCROLL_ATTR)) {
+          return;
+        }
+        // After navigation to hash url e.g /docs/blocks#anchor we want to scroll
+        // to the anchor instead of top of the page
+        const anchor = nextUrl.hash.slice(1);
+        if (anchor === "") {
           scrollTo({ left: 0, top: 0, behavior: "instant" });
+          return;
+        }
+        const target = document.getElementById(anchor) ??
+          document.getElementById(decodeURIComponent(anchor));
+        if (target === null) {
+          scrollTo({ left: 0, top: 0, behavior: "instant" });
+          return;
+        }
+        target.scrollIntoView({ behavior: "instant", block: "start" });
+
+        // The entry was pushed before we knew where we would end up, so refresh its
+        // scroll offsets to keep back/forward restoration accurate.
+        const state: FreshHistoryState | null = history.state;
+        if (state !== null) {
+          history.replaceState(
+            {
+              ...state,
+              scrollX: globalThis.scrollX,
+              scrollY: globalThis.scrollY,
+            },
+            "",
+            location.href,
+          );
         }
       } finally {
         if (indicator !== undefined) {
