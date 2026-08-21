@@ -394,7 +394,9 @@ export class DenoLoaderPlugin {
                 return false;
               }
               if (
-                dependencyType === "url"
+                dependencyType === "url" &&
+                // new URL() references are always relative, but import.meta.resolve() takes import specifiers.
+                resolveData.dependencies[0]?.type !== "import.meta.resolve()"
               ) {
                 requestRequest = "./" + requestRequest;
               }
