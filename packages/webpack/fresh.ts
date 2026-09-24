@@ -21,6 +21,7 @@ import { encodeHex } from "@std/encoding";
 import { UnmapPlugin } from "./unmap.ts";
 import { type DenoEnvOptions, DenoEnvPlugin } from "./denoEnv.ts";
 import { ViteIgnorePlugin } from "./viteComment.ts";
+import { type RawImportsOptions, RawImportsPlugin } from "./rawImports.ts";
 import { js, type JsRaw, toJsRaw } from "./quasiquote.ts";
 
 interface WebpackFreshCompilation extends Webpack.Compilation {
@@ -76,7 +77,8 @@ export class FreshPlugin {
   constructor(
     public baseUrl: URL,
     public importHelper: (path: string) => Promise<Record<string, unknown>>,
-    public options: { env?: DenoEnvOptions } = {},
+    public options: { env?: DenoEnvOptions; rawImports?: RawImportsOptions } =
+      {},
   ) {
     assertDirURL(this.baseUrl);
     if (!importHelper) {
@@ -121,6 +123,7 @@ export class FreshPlugin {
     (new UnmapPlugin()).apply(compiler);
     (new DenoEnvPlugin(this.options.env)).apply(compiler);
     (new ViteIgnorePlugin()).apply(compiler);
+    (new RawImportsPlugin(this.options.rawImports)).apply(compiler);
     // Some @std and other packages detect deno on presence of Deno global, dead-code-elimnate this stuff
     (new Webpack.DefinePlugin({ Deno: "undefined" })).apply(compiler);
 
@@ -141,15 +144,21 @@ export class FreshPlugin {
               `_fresh/js/c/[contenthash].mjs`;
             compilation.outputOptions.chunkFilename =
               `_fresh/js/c/[contenthash].mjs`;
+            compilation.outputOptions.workerChunkFilename =
+              `_fresh/js/c/[contenthash].mjs`;
           } else {
             compilation.outputOptions.filename =
               `_fresh/js/${compilationId}/[id].mjs`;
             compilation.outputOptions.chunkFilename =
               `_fresh/js/${compilationId}/[id].mjs`;
+            compilation.outputOptions.workerChunkFilename =
+              `_fresh/js/${compilationId}/[id].mjs`;
           }
           // Assets are always content-addressed
           compilation.outputOptions.assetModuleFilename =
             `_fresh/js/c/[hash][ext][query]`;
+          compilation.outputOptions.webassemblyModuleFilename =
+            `_fresh/js/c/[hash].wasm`;
         }
 
         compilation.hooks.processAssets.tapPromise(

@@ -77,12 +77,30 @@ function resolverSpan(
   };
 }
 
+const MATCH_RESOURCE = /^([^!]+)!=!/;
+
+function requestedModuleType(type: string): RequestedModuleType {
+  if (type === "asset/source") return RequestedModuleType.Text;
+  if (type.startsWith("asset/")) return RequestedModuleType.Bytes;
+  return RequestedModuleType.Default;
+}
+
 async function simpleDenoResolve(
   loader: Loader,
   issuer: string,
   request: string,
   esm: boolean,
-) {
+): Promise<string> {
+  const matchResource = MATCH_RESOURCE.exec(request);
+  if (matchResource) {
+    const resolved = await simpleDenoResolve(
+      loader,
+      issuer,
+      request.slice(matchResource[0].length),
+      esm,
+    );
+    return `${matchResource[0]}${resolved}`;
+  }
   let resolution: string | undefined;
   if (request.startsWith("/") && issuer.startsWith("https://")) {
     resolution = new URL(request, new URL(issuer).origin).href;
@@ -549,11 +567,14 @@ export class DenoLoaderPlugin {
               const loader = await this.loader;
               const loaded = await loader.load(
                 resource,
-                RequestedModuleType.Default,
+                requestedModuleType(module.type),
               );
               // TODO: Should import assertions be handled somehow?
               span.resolved(loaded);
-              cb(null, Buffer.from((loaded as { code: Uint8Array }).code));
+              cb(
+                null,
+                Buffer.from((loaded as { code: Uint8Array | string }).code),
+              );
             } catch (e) {
               span.errored(e);
               cb(e as Error);
