@@ -342,7 +342,8 @@ export class DenoLoaderPlugin {
     compiler.options.output.library = { type: "module" };
 
     compiler.options.output.module = true;
-    compiler.options.experiments.outputModule = true;
+    (compiler.options.experiments as { outputModule: boolean }).outputModule =
+      true;
 
     // Deno provides its own type-stripping when no ts loader is present
     // It is not required since deno-loader handles typescript.

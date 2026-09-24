@@ -1,10 +1,10 @@
 {
   "name": "@freshpack/examples",
-  "version": "1.1.0",
+  "version": "2.1.0",
   "license": "MIT",
   "imports": {
-    "preact": "npm:preact@^10.29.8",
-    "@preact/signals": "npm:@preact/signals@^2.11.1"
+    "preact": "npm:preact@^11.0.0",
+    "@preact/signals": "npm:@preact/signals@^2.11.3"
   },
   "exports": {
     "./island": "./src/island.tsx",
