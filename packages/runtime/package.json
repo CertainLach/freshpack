@@ -1,11 +1,17 @@
 {
   "name": "@freshpack/runtime",
   "version": "1.0.0",
-  "license": "MIT",
+  "type": "module",
   "exports": {
     ".": "./mod.ts",
     "./internal": "./internal.ts",
     "./client-hmr": "./client-hmr.ts",
     "./server-middleware": "./server-middleware.ts"
+  },
+  "dependencies": {
+    "@freshpack/core": "workspace:*",
+    "@freshpack/webpack": "workspace:*",
+    "memfs": "^4.80.0",
+    "webpack": "^5.111.1"
   }
 }

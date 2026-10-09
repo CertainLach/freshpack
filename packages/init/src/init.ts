@@ -2,7 +2,7 @@
 import * as colors from "@std/fmt/colors";
 import * as path from "@std/path";
 import * as semver from "@std/semver";
-import initConfig from "../deno.json" with { type: "json" };
+import initConfig from "../package.json" with { type: "json" };
 
 // Keep these as is, as we replace these version in our release script
 const FRESH_VERSION = "2.3.3";

@@ -1,0 +1,14 @@
+{
+  "name": "@freshpack/workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "example"],
+  "scripts": {
+    "test": "deno test -A --parallel",
+    "check:types": "deno check --allow-import",
+    "ok": "deno fmt --check && deno lint && pnpm run check:types && pnpm run test"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4"
+  }
+}

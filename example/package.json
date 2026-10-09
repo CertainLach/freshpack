@@ -1,0 +1,21 @@
+{
+  "name": "@freshpack/example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "deno run -A --watch-hmr dev.ts",
+    "build": "deno run -A build.ts",
+    "run": "pnpm run build && deno run --allow-env=DENO_DEPLOYMENT_ID,GITHUB_SHA,CI_COMMIT_SHA --allow-net=0.0.0.0:8000 --allow-read=_fresh main.ts",
+    "compile": "pnpm run build && deno compile --include dist --allow-env=DENO_DEPLOYMENT_ID,GITHUB_SHA,CI_COMMIT_SHA --allow-net=0.0.0.0:8000 main.ts"
+  },
+  "dependencies": {
+    "@freshpack/core": "workspace:*",
+    "@freshpack/runtime": "workspace:*",
+    "@freshpack/webpack": "workspace:*",
+    "@preact/signals": "^2.11.3",
+    "@prefresh/core": "^1.5.11",
+    "copy-webpack-plugin": "^14.0.0",
+    "preact": "^11.0.0",
+    "webpack": "^5.111.1"
+  }
+}

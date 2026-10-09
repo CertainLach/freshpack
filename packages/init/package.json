@@ -1,0 +1,19 @@
+{
+  "name": "@freshpack/init",
+  "version": "2.4.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/mod.ts",
+    "./create": "./src/create.ts"
+  },
+  "dependencies": {
+    "@std/cli": "jsr:^1.0.32",
+    "@std/fmt": "jsr:^1.0.10",
+    "@std/path": "jsr:^1.1.6",
+    "@std/semver": "jsr:^1.0.8"
+  },
+  "devDependencies": {
+    "@std/expect": "jsr:^1.0.20",
+    "@std/testing": "jsr:^1.0.21"
+  }
+}

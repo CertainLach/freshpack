@@ -1,7 +1,7 @@
 import { type Span, SpanStatusCode, trace } from "@opentelemetry/api";
-import denoJson from "../deno.json" with { type: "json" };
+import packageJson from "../package.json" with { type: "json" };
 
-export const CURRENT_FRESH_VERSION = denoJson.version;
+export const CURRENT_FRESH_VERSION = packageJson.version;
 
 export const tracer = trace.getTracer("fresh", CURRENT_FRESH_VERSION);
 export { trace };
