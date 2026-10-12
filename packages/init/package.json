@@ -15,5 +15,12 @@
   "devDependencies": {
     "@std/expect": "jsr:^1.0.20",
     "@std/testing": "jsr:^1.0.21"
+  },
+  "scripts": {
+    "prepack": "pnpm-prepare"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "linkDirectory": false
   }
 }

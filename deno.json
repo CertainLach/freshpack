@@ -1,9 +1,5 @@
 {
   "nodeModulesDir": "manual",
-  "workspace": [
-    "./packages/*",
-    "example"
-  ],
   "exclude": [
     "**/_fresh/*",
     "**/tmp/*",

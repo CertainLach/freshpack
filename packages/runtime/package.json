@@ -13,5 +13,12 @@
     "@freshpack/webpack": "workspace:*",
     "memfs": "^4.80.0",
     "webpack": "^5.111.1"
+  },
+  "scripts": {
+    "prepack": "pnpm-prepare"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "linkDirectory": false
   }
 }

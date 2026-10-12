@@ -35,5 +35,12 @@
     "@std/streams": "jsr:^1.2.0",
     "@std/testing": "jsr:^1.0.21",
     "linkedom": "^0.18.13"
+  },
+  "scripts": {
+    "prepack": "pnpm-prepare"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "linkDirectory": false
   }
 }

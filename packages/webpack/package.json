@@ -18,5 +18,12 @@
     "@std/media-types": "jsr:^1.1.0",
     "@std/path": "jsr:^1.1.6",
     "webpack": "^5.111.1"
+  },
+  "scripts": {
+    "prepack": "pnpm-prepare"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "linkDirectory": false
   }
 }

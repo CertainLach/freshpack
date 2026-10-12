@@ -11,5 +11,12 @@
     "@freshpack/core": "workspace:*",
     "@preact/signals": "^2.11.3",
     "preact": "^11.0.0"
+  },
+  "scripts": {
+    "prepack": "pnpm-prepare"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "linkDirectory": false
   }
 }
