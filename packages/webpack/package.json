@@ -1,6 +1,6 @@
 {
   "name": "@freshpack/webpack",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "exports": {
     ".": "./mod.ts",
@@ -17,7 +17,7 @@
     "@std/encoding": "jsr:^1.0.11",
     "@std/media-types": "jsr:^1.1.0",
     "@std/path": "jsr:^1.1.6",
-    "webpack": "^5.111.1"
+    "webpack": "^5.112.0"
   },
   "scripts": {
     "prepack": "pnpm-prepare"

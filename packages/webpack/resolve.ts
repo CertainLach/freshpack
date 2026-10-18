@@ -536,7 +536,9 @@ export class DenoLoaderPlugin {
             }
           },
         );
-        const hooks = Webpack.NormalModule.getCompilationHooks(compilation);
+        const hooks = compiler.webpack.NormalModule.getCompilationHooks(
+          compilation,
+        );
 
         hooks.readResourceForScheme.for("node").tapAsync(
           "JsrPlugin",

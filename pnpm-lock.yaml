@@ -44,6 +44,8 @@ importers:
       '@std/encoding':
         specifier: jsr:^1.0.11
         version: '@jsr/std__encoding@1.0.11'
+    linkDirectory: false
+    publishDirectory: dist
 
   packages/examples:
     dependencies:
@@ -56,6 +58,8 @@ importers:
       preact:
         specifier: ^11.0.0
         version: 11.0.1(preact-render-to-string@6.8.0)
+    linkDirectory: false
+    publishDirectory: dist
 
   packages/fresh:
     dependencies:
@@ -123,6 +127,8 @@ importers:
       linkedom:
         specifier: ^0.18.13
         version: 0.18.13
+    linkDirectory: false
+    publishDirectory: dist
 
   packages/init:
     dependencies:
@@ -145,6 +151,8 @@ importers:
       '@std/testing':
         specifier: jsr:^1.0.21
         version: '@jsr/std__testing@1.0.21'
+    linkDirectory: false
+    publishDirectory: dist
 
   packages/runtime:
     dependencies:
@@ -158,8 +166,10 @@ importers:
         specifier: ^4.80.0
         version: 4.80.0
       webpack:
-        specifier: ^5.111.1
-        version: 5.111.1
+        specifier: ^5.112.0
+        version: 5.112.0
+    linkDirectory: false
+    publishDirectory: dist
 
   packages/webpack:
     dependencies:
@@ -185,8 +195,10 @@ importers:
         specifier: jsr:^1.1.6
         version: '@jsr/std__path@1.1.6'
       webpack:
-        specifier: ^5.111.1
-        version: 5.111.1
+        specifier: ^5.112.0
+        version: 5.112.0
+    linkDirectory: false
+    publishDirectory: dist
 
 packages:
 
@@ -848,12 +860,26 @@ packages:
     resolution: {integrity: sha512-6i/00NBjP4yGPs+caKSyRfpTF/8Torsu0MOW3mMzIbhgISFder8i7xbqgHlLMwJrdiN8ndBV3UA1/AfzPSr+jg==}
     engines: {node: '>=10.13.0'}
 
+  watchpack@2.6.2:
+    resolution: {integrity: sha512-67nxRd7I5uAyn+KamYsCqU30iVgCgZ4aj8ZOGzmxs7zNPuvlnoYltm6+6JkOjEcD6WVXdu1BfH+gVQs3FUuW7Q==}
+    engines: {node: '>=10.13.0'}
+
   webpack-sources@3.6.0:
     resolution: {integrity: sha512-EIMmPVvNI0CYXyRPp34F2Qk7W37/BZVZIofS6LAUnrNjCVahS+hO4mxwFJDjQjODTGZDtVzLYoN2+1dYkhk9qA==}
     engines: {node: '>=10.13.0'}
 
   webpack@5.111.1:
     resolution: {integrity: sha512-cNypaz0RP+S4cvQVi1M/3bRUkvNP0xZpL0TjFx+c6jg64VbxD+2weWDgY9UnjRI6dhZgtaj8DU76GGFcJ79xPQ==}
+    engines: {node: '>=10.13.0'}
+    hasBin: true
+    peerDependencies:
+      webpack-cli: '*'
+    peerDependenciesMeta:
+      webpack-cli:
+        optional: true
+
+  webpack@5.112.0:
+    resolution: {integrity: sha512-NIBpsRuCll036haDDt/CfcTDfsWNR9Z782nMRMI9D377BsGcYzZDTNU5TyzhCJzPIcihAxMBaMAhq2WSaDrH8Q==}
     engines: {node: '>=10.13.0'}
     hasBin: true
     peerDependencies:
@@ -1437,6 +1463,14 @@ snapshots:
       terser: 5.51.2
       webpack: 5.111.1
 
+  minimizer-webpack-plugin@5.13.0(webpack@5.112.0):
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      jest-worker: 27.5.1
+      schema-utils: 4.5.0
+      terser: 5.51.2
+      webpack: 5.112.0
+
   node-releases@2.0.58: {}
 
   normalize-path@3.0.0: {}
@@ -1517,6 +1551,10 @@ snapshots:
     dependencies:
       graceful-fs: 4.2.11
 
+  watchpack@2.6.2:
+    dependencies:
+      graceful-fs: 4.2.11
+
   webpack-sources@3.6.0: {}
 
   webpack@5.111.1:
@@ -1537,6 +1575,43 @@ snapshots:
       schema-utils: 4.5.0
       tapable: 2.3.3
       watchpack: 2.5.2
+      webpack-sources: 3.6.0
+    transitivePeerDependencies:
+      - '@minify-html/node'
+      - '@napi-rs/image'
+      - '@swc/core'
+      - '@swc/css'
+      - '@swc/html'
+      - clean-css
+      - cssnano
+      - csso
+      - esbuild
+      - html-minifier-terser
+      - imagemin
+      - lightningcss
+      - postcss
+      - sharp
+      - svgo
+      - uglify-js
+
+  webpack@5.112.0:
+    dependencies:
+      '@types/estree': 1.0.9
+      '@types/json-schema': 7.0.15
+      '@webassemblyjs/ast': 1.14.1
+      '@webassemblyjs/wasm-edit': 1.14.1
+      '@webassemblyjs/wasm-parser': 1.14.1
+      browserslist: 4.29.3
+      chrome-trace-event: 1.0.4
+      enhanced-resolve: 5.26.0
+      es-module-lexer: 2.3.2
+      events: 3.3.0
+      graceful-fs: 4.2.11
+      mime-db: 1.54.0
+      minimizer-webpack-plugin: 5.13.0(webpack@5.112.0)
+      schema-utils: 4.5.0
+      tapable: 2.3.3
+      watchpack: 2.6.2
       webpack-sources: 3.6.0
     transitivePeerDependencies:
       - '@minify-html/node'

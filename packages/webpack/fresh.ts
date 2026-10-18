@@ -22,6 +22,7 @@ import { UnmapPlugin } from "./unmap.ts";
 import { type DenoEnvOptions, DenoEnvPlugin } from "./denoEnv.ts";
 import { ViteIgnorePlugin } from "./viteComment.ts";
 import { type RawImportsOptions, RawImportsPlugin } from "./rawImports.ts";
+import { ImportMetaResolveAssetPlugin } from "./importMetaResolve.ts";
 import { js, type JsRaw, toJsRaw } from "./quasiquote.ts";
 
 interface WebpackFreshCompilation extends Webpack.Compilation {
@@ -124,6 +125,7 @@ export class FreshPlugin {
     (new DenoEnvPlugin(this.options.env)).apply(compiler);
     (new ViteIgnorePlugin()).apply(compiler);
     (new RawImportsPlugin(this.options.rawImports)).apply(compiler);
+    (new ImportMetaResolveAssetPlugin()).apply(compiler);
     // Some @std and other packages detect deno on presence of Deno global, dead-code-elimnate this stuff
     (new Webpack.DefinePlugin({ Deno: "undefined" })).apply(compiler);
 

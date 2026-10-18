@@ -18,7 +18,15 @@
   dir: packages/runtime
   intents:
     - sharp-cooks-hammer
+"@freshpack/runtime@1.0.2":
+  dir: packages/runtime
+  intents:
+    - light-trains-remember
 "@freshpack/webpack@1.0.1":
   dir: packages/webpack
   intents:
     - sharp-cooks-hammer
+"@freshpack/webpack@1.0.2":
+  dir: packages/webpack
+  intents:
+    - light-trains-remember
