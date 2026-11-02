@@ -1412,6 +1412,50 @@ Deno.test({
 });
 
 Deno.test({
+  name: "partials - ignores download and blob links",
+  fn: async () => {
+    const app = testApp()
+      .get("/", (ctx) => {
+        return ctx.render(
+          <Doc>
+            <div f-client-nav class="nav">
+              <a href="/file.json" download class="download">download</a>
+              <SelfCounter />
+            </div>
+          </Doc>,
+        );
+      });
+
+    await withBrowserApp(app, async (page, address) => {
+      await page.goto(address, { waitUntil: "load" });
+      await page.locator(".ready").wait();
+
+      const prevented = await page.evaluate(() => {
+        const results: boolean[] = [];
+        const record = (e: Event) => {
+          results.push(e.defaultPrevented);
+          e.preventDefault();
+        };
+        globalThis.addEventListener("click", record);
+
+        const nav = document.querySelector(".nav")!;
+        const blob = document.createElement("a");
+        blob.href = URL.createObjectURL(new Blob(["{}"]));
+        nav.appendChild(blob);
+
+        document.querySelector<HTMLAnchorElement>(".download")!.click();
+        blob.click();
+
+        globalThis.removeEventListener("click", record);
+        return results;
+      });
+
+      expect(prevented).toEqual([false, false]);
+    });
+  },
+});
+
+Deno.test({
   name: "partials - opt out of partial navigation",
   ignore: true, // TODO: test is flaky
   fn: async () => {

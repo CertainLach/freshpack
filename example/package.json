@@ -12,10 +12,10 @@
     "@freshpack/core": "workspace:*",
     "@freshpack/runtime": "workspace:*",
     "@freshpack/webpack": "workspace:*",
-    "@preact/signals": "^2.11.3",
+    "@preact/signals": "^2.11.4",
     "@prefresh/core": "^1.5.11",
     "copy-webpack-plugin": "^14.0.0",
-    "preact": "^11.0.0",
-    "webpack": "^5.111.1"
+    "preact": "^11.1.1",
+    "webpack": "^5.112.2"
   }
 }

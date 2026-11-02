@@ -155,6 +155,8 @@ document.addEventListener("click", async (e) => {
       // Check if it's an internal link
       el.href && (!el.target || el.target === "_self") &&
       el.origin === location.origin &&
+      el.protocol === location.protocol &&
+      !el.hasAttribute("download") &&
       // Check if it was a left click and not a right click
       e.button === 0 &&
       // Check that the user doesn't press a key combo to open the

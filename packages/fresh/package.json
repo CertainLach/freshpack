@@ -1,6 +1,6 @@
 {
   "name": "@freshpack/core",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "type": "module",
   "exports": {
     ".": "./src/mod.ts",
@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@freshpack/build-id": "workspace:*",
-    "@opentelemetry/api": "^1.9.1",
-    "@preact/signals": "^2.11.3",
+    "@opentelemetry/api": "^1.10.0",
+    "@preact/signals": "^2.11.4",
     "@std/encoding": "jsr:^1.0.11",
     "@std/fmt": "jsr:^1.0.10",
     "@std/fs": "jsr:^1.0.24",
@@ -25,8 +25,8 @@
     "@std/net": "jsr:^1.0.7",
     "@std/path": "jsr:^1.1.6",
     "@std/uuid": "jsr:^1.1.2",
-    "preact": "^11.0.0",
-    "preact-render-to-string": "^6.8.0"
+    "preact": "^11.1.1",
+    "preact-render-to-string": "^6.8.2"
   },
   "devDependencies": {
     "@astral/astral": "jsr:^0.5.6",
@@ -34,7 +34,7 @@
     "@std/expect": "jsr:^1.0.20",
     "@std/streams": "jsr:^1.2.0",
     "@std/testing": "jsr:^1.0.21",
-    "linkedom": "^0.18.13"
+    "linkedom": "^0.18.15"
   },
   "scripts": {
     "prepack": "pnpm-prepare"

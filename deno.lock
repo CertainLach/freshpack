@@ -1,0 +1,120 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@std/fs@1": "1.0.24",
+    "jsr:@std/internal@^1.0.14": "1.0.14",
+    "jsr:@std/path@1": "1.1.6",
+    "jsr:@std/path@^1.1.5": "1.1.6"
+  },
+  "jsr": {
+    "@std/fs@1.0.24": {
+      "integrity": "f3061b45b81673a2bece689da041df32d174be064c89eb6397fb5718d3fb7877",
+      "dependencies": [
+        "jsr:@std/path@^1.1.5"
+      ]
+    },
+    "@std/internal@1.0.14": {
+      "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
+    },
+    "@std/path@1.1.6": {
+      "integrity": "c68485c2a4dfbb5ae3cc74fae4e8c4e5d874cf8a8ed12927917235c758b46cbe",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    }
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@types/node@^26.6.6"
+      ]
+    },
+    "members": {
+      "example": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@preact/signals@^2.11.3",
+            "npm:@prefresh/core@^1.5.11",
+            "npm:copy-webpack-plugin@14",
+            "npm:preact@11",
+            "npm:webpack@^5.111.1"
+          ]
+        }
+      },
+      "packages/build-id": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@jsr/std__encoding@^1.0.11"
+          ]
+        }
+      },
+      "packages/examples": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@preact/signals@^2.11.3",
+            "npm:preact@11"
+          ]
+        }
+      },
+      "packages/fresh": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@jsr/astral__astral@~0.5.6",
+            "npm:@jsr/std__async@^1.5.1",
+            "npm:@jsr/std__encoding@^1.0.11",
+            "npm:@jsr/std__expect@^1.0.20",
+            "npm:@jsr/std__fmt@^1.0.10",
+            "npm:@jsr/std__fs@^1.0.24",
+            "npm:@jsr/std__html@^1.0.7",
+            "npm:@jsr/std__http@^1.1.4",
+            "npm:@jsr/std__jsonc@^1.0.3",
+            "npm:@jsr/std__media-types@^1.1.0",
+            "npm:@jsr/std__net@^1.0.7",
+            "npm:@jsr/std__path@^1.1.6",
+            "npm:@jsr/std__streams@^1.2.0",
+            "npm:@jsr/std__testing@^1.0.21",
+            "npm:@jsr/std__uuid@^1.1.2",
+            "npm:@opentelemetry/api@^1.9.1",
+            "npm:@preact/signals@^2.11.3",
+            "npm:linkedom@~0.18.13",
+            "npm:preact-render-to-string@^6.8.0",
+            "npm:preact@11"
+          ]
+        }
+      },
+      "packages/init": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@jsr/std__cli@^1.0.32",
+            "npm:@jsr/std__expect@^1.0.20",
+            "npm:@jsr/std__fmt@^1.0.10",
+            "npm:@jsr/std__path@^1.1.6",
+            "npm:@jsr/std__semver@^1.0.8",
+            "npm:@jsr/std__testing@^1.0.21"
+          ]
+        }
+      },
+      "packages/runtime": {
+        "packageJson": {
+          "dependencies": [
+            "npm:memfs@^4.80.0",
+            "npm:webpack@^5.112.0"
+          ]
+        }
+      },
+      "packages/webpack": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@jsr/deno__loader@0.5",
+            "npm:@jsr/std__assert@^1.0.19",
+            "npm:@jsr/std__encoding@^1.0.11",
+            "npm:@jsr/std__media-types@^1.1.0",
+            "npm:@jsr/std__path@^1.1.6",
+            "npm:@prefresh/utils@^1.2.1",
+            "npm:webpack@^5.112.0"
+          ]
+        }
+      }
+    }
+  }
+}
