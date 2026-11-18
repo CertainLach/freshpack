@@ -9,7 +9,7 @@
     "@std/encoding": "jsr:^1.0.11"
   },
   "scripts": {
-    "prepack": "pnpm-prepare"
+    "prepack": "raphus"
   },
   "publishConfig": {
     "directory": "dist",

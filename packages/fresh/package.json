@@ -37,7 +37,7 @@
     "linkedom": "^0.18.15"
   },
   "scripts": {
-    "prepack": "pnpm-prepare"
+    "prepack": "raphus"
   },
   "publishConfig": {
     "directory": "dist",

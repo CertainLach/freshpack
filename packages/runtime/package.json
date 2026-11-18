@@ -15,7 +15,7 @@
     "webpack": "^5.112.2"
   },
   "scripts": {
-    "prepack": "pnpm-prepare"
+    "prepack": "raphus"
   },
   "publishConfig": {
     "directory": "dist",

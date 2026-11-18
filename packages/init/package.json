@@ -17,7 +17,7 @@
     "@std/testing": "jsr:^1.0.21"
   },
   "scripts": {
-    "prepack": "pnpm-prepare"
+    "prepack": "raphus"
   },
   "publishConfig": {
     "directory": "dist",
