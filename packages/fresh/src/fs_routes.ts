@@ -107,7 +107,13 @@ export function fsItemsToCommands<State>(
         if (!mod.default) continue;
 
         commands.push(
-          newLayoutCmd(pattern, mod.default, mod.config, true, mod.css),
+          newLayoutCmd(
+            pattern,
+            mod.default,
+            mod.config,
+            true,
+            mergeCss(item.css, mod.css),
+          ),
         );
         continue;
       }
@@ -118,7 +124,7 @@ export function fsItemsToCommands<State>(
           {
             component: mod.default ?? undefined,
             config: mod.config ?? undefined,
-            css: mod.css,
+            css: mergeCss(item.css, mod.css),
             // deno-lint-ignore no-explicit-any
             handler: (handlers as any) ?? undefined,
           },
@@ -132,7 +138,7 @@ export function fsItemsToCommands<State>(
           {
             config: mod.config,
             component: mod.default,
-            css: mod.css,
+            css: mergeCss(item.css, mod.css),
             // deno-lint-ignore no-explicit-any
             handler: handlers as any ?? undefined,
           },
@@ -145,7 +151,7 @@ export function fsItemsToCommands<State>(
         const { mod } = validateFsMod<State>(filePath, rawMod, type);
         if (mod.default === undefined) continue;
 
-        commands.push(newAppCmd(mod.default, mod.css));
+        commands.push(newAppCmd(mod.default, mergeCss(item.css, mod.css)));
         continue;
       }
       case CommandType.Route: {
@@ -159,7 +165,13 @@ export function fsItemsToCommands<State>(
             }, async (span) => {
               try {
                 const result = await rawMod();
-                return normalizeRoute(filePath, result, routePattern, type);
+                return normalizeRoute(
+                  filePath,
+                  result,
+                  routePattern,
+                  type,
+                  item.css,
+                );
               } catch (err) {
                 recordSpanError(span, err);
                 throw err;
@@ -173,7 +185,13 @@ export function fsItemsToCommands<State>(
           config.routeOverride = item.overrideConfig?.routeOverride ??
             routePattern;
         } else {
-          normalized = normalizeRoute(filePath, rawMod, routePattern, type);
+          normalized = normalizeRoute(
+            filePath,
+            rawMod,
+            routePattern,
+            type,
+            item.css,
+          );
           if (rawMod.config) {
             config = rawMod.config;
           }
@@ -340,6 +358,7 @@ function normalizeRoute<State>(
   rawMod: FreshFsMod<State>,
   routePattern: string,
   commandType: CommandType,
+  itemCss: string[] | undefined,
 ): Route<State> {
   const { handlers, mod } = validateFsMod<State>(filePath, rawMod, commandType);
 
@@ -351,6 +370,15 @@ function normalizeRoute<State>(
     // deno-lint-ignore no-explicit-any
     handler: (handlers as any) ?? undefined,
     component: mod.default,
-    css: rawMod.css,
+    css: mergeCss(itemCss, rawMod.css),
   };
+}
+
+function mergeCss(
+  itemCss: string[] | undefined,
+  modCss: string[] | undefined,
+): string[] | undefined {
+  if (itemCss === undefined || itemCss.length === 0) return modCss;
+  if (modCss === undefined || modCss.length === 0) return itemCss;
+  return [...itemCss, ...modCss.filter((href) => !itemCss.includes(href))];
 }

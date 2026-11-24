@@ -16,6 +16,7 @@ import {
   join as joinPosix,
   relative as relativePosix,
 } from "@std/path/posix";
+import { fromFileUrl } from "@std/path";
 import { contentType as getStdContentType } from "@std/media-types/content-type";
 import { encodeHex } from "@std/encoding";
 import { UnmapPlugin } from "./unmap.ts";
@@ -24,10 +25,24 @@ import { ViteIgnorePlugin } from "./viteComment.ts";
 import { type RawImportsOptions, RawImportsPlugin } from "./rawImports.ts";
 import { ImportMetaResolveAssetPlugin } from "./importMetaResolve.ts";
 import { js, type JsRaw, toJsRaw } from "./quasiquote.ts";
+import type { WorkspaceOptions } from "@deno/loader";
+import { DenoLoaderPlugin, internalTranspileLoader } from "./resolve.ts";
+import { defineRequire } from "./requireHook.ts";
+import { registerRouteCssGraph } from "./routeCssLoader.ts";
+
+const internalRouteCssLoader = defineRequire(
+  "@freshpack/webpack/internal-route-css-loader",
+  await import("./routeCssLoader.ts"),
+);
+
+const ROUTE_CSS_LAYER = "fresh-route-css";
+const ROUTE_CSS_RUNTIME = "fresh-route-css-runtime";
+const JS_MODULE = /\.[cm]?[jt]sx?$/;
 
 interface WebpackFreshCompilation extends Webpack.Compilation {
   freshRoutes: FsRouteFileNoMod<unknown>[];
   freshIslands: { entryName: string; filePath: string }[];
+  freshRouteCss: { entryName: string; filePath: string }[];
   freshRoot: string;
   buildId: string;
 
@@ -53,19 +68,60 @@ type CacheStaticFile = {
   size: number;
 };
 
+type ChunkFilter =
+  | RegExp
+  | "all"
+  | "initial"
+  | "async"
+  | ((chunk: Webpack.Chunk) => boolean | undefined);
+
+function excludeChunks(
+  filter: ChunkFilter | undefined,
+  excluded: (chunk: Webpack.Chunk) => boolean,
+): (chunk: Webpack.Chunk) => boolean {
+  return (chunk) => {
+    if (excluded(chunk)) return false;
+    if (filter === undefined || filter === "async") {
+      return !chunk.canBeInitial();
+    }
+    if (filter === "initial") return chunk.canBeInitial();
+    if (filter === "all") return true;
+    if (filter instanceof RegExp) {
+      return typeof chunk.name === "string" && filter.test(chunk.name);
+    }
+    return filter(chunk) ?? false;
+  };
+}
+
+function isCssFile(file: string): boolean {
+  return file.endsWith(".css");
+}
+
 function getMainChunkName(
   basePath: string,
   e: Webpack.Entrypoint,
 ): string {
-  const entryChunk = e.getEntrypointChunk();
-  const files = [...entryChunk.files].map((v) => joinPosix(basePath, v));
-  return files[0];
+  const file = [...e.getEntrypointChunk().files].find((v) =>
+    v.endsWith(".mjs")
+  );
+  assert(file, `entrypoint ${e.name} has no javascript file`);
+  return joinPosix(basePath, file);
+}
+
+function getCssFiles(basePath: string, e: Webpack.Entrypoint): string[] {
+  return e.getFiles().filter(isCssFile).map((v) => joinPosix(basePath, v));
 }
 function getChunkFiles(
   basePath: string,
   e: Webpack.Entrypoint,
 ): string[] {
   return e.getFiles().map((v) => joinPosix(basePath, v));
+}
+
+export interface FreshPluginOptions {
+  env?: DenoEnvOptions;
+  rawImports?: RawImportsOptions;
+  deno?: WorkspaceOptions;
 }
 
 export class FreshPlugin {
@@ -78,8 +134,7 @@ export class FreshPlugin {
   constructor(
     public baseUrl: URL,
     public importHelper: (path: string) => Promise<Record<string, unknown>>,
-    public options: { env?: DenoEnvOptions; rawImports?: RawImportsOptions } =
-      {},
+    public options: FreshPluginOptions = {},
   ) {
     assertDirURL(this.baseUrl);
     if (!importHelper) {
@@ -98,8 +153,88 @@ export class FreshPlugin {
     assert(this.#dist, "dist path was not determined yet");
     return relativePosix(this.#dist, path);
   }
+  #islandFiles = new Set<string>();
+
+  applyDenoLoader(compiler: Webpack.Compiler): DenoLoaderPlugin {
+    const existing = compiler.options.plugins.find((
+      p,
+    ): p is DenoLoaderPlugin => p instanceof DenoLoaderPlugin);
+    if (existing) {
+      assert(
+        this.options.deno === undefined,
+        "DenoLoaderPlugin is applied by FreshPlugin, remove it from plugins and pass its options as `deno` to FreshPlugin",
+      );
+      return existing;
+    }
+    const plugin = new DenoLoaderPlugin({ ...this.options.deno });
+    plugin.apply(compiler);
+    return plugin;
+  }
+
+  keepEntriesWhole(compiler: Webpack.Compiler, entries: Set<string>) {
+    const splitChunks = compiler.options.optimization.splitChunks;
+    if (!splitChunks || entries.size === 0) return;
+    const excluded = (chunk: Webpack.Chunk) =>
+      typeof chunk.name === "string" && entries.has(chunk.name);
+    splitChunks.chunks = excludeChunks(splitChunks.chunks, excluded);
+    for (const group of Object.values(splitChunks.cacheGroups ?? {})) {
+      if (
+        typeof group === "object" && !(group instanceof RegExp) &&
+        group.chunks !== undefined
+      ) {
+        group.chunks = excludeChunks(group.chunks, excluded);
+      }
+    }
+  }
+
+  applyRouteCss(compiler: Webpack.Compiler, denoLoader: DenoLoaderPlugin) {
+    compiler.options.module.rules.push({
+      with: { type: "css" },
+      type: "css",
+      parser: { exportType: "link" },
+    });
+
+    const root = fromFileUrl(this.baseUrl);
+    const graphId = registerRouteCssGraph({
+      loader: () => denoLoader.loader,
+      follow: (path) =>
+        path.startsWith(root) && !path.includes("/node_modules/") &&
+        !this.#islandFiles.has(path),
+    });
+
+    compiler.hooks.compilation.tap(
+      FreshPlugin.name,
+      (_compilation, { normalModuleFactory }) => {
+        normalModuleFactory.hooks.afterResolve.tap(
+          { name: FreshPlugin.name, stage: 100 },
+          ({ createData: data }) => {
+            if (data.layer !== ROUTE_CSS_LAYER) return;
+            const resource = data.resource;
+            if (
+              resource === undefined || resource.includes("://") ||
+              !JS_MODULE.test(resource)
+            ) {
+              return;
+            }
+            data.loaders = [
+              {
+                loader: internalRouteCssLoader,
+                options: { id: graphId },
+                ident: null,
+                type: null,
+              },
+              ...(data.loaders ?? []).filter((v) =>
+                v.loader === internalTranspileLoader
+              ),
+            ];
+          },
+        );
+      },
+    );
+  }
 
   apply(compiler: Webpack.Compiler) {
+    const denoLoader = this.applyDenoLoader(compiler);
     {
       // HACK: Webpack does not export EntryDependency, and it is impossible to use EntryPlugin, as
       // it wants to modify make stage, yet we have already reached this stage when we want to use
@@ -129,6 +264,16 @@ export class FreshPlugin {
     // Some @std and other packages detect deno on presence of Deno global, dead-code-elimnate this stuff
     (new Webpack.DefinePlugin({ Deno: "undefined" })).apply(compiler);
 
+    compiler.options.experiments.css ??= true;
+    const routeCssEnabled = compiler.options.experiments.css === true;
+    if (routeCssEnabled) this.applyRouteCss(compiler, denoLoader);
+
+    const entryOption = compiler.options.entry;
+    const userEntries = new Set(
+      typeof entryOption === "function" ? [] : Object.keys(entryOption),
+    );
+    this.keepEntriesWhole(compiler, userEntries);
+
     compiler.hooks.make.tapPromise(
       FreshPlugin.name,
       async (_compilation: Webpack.Compilation) => {
@@ -148,6 +293,8 @@ export class FreshPlugin {
               `_fresh/js/c/[contenthash].mjs`;
             compilation.outputOptions.workerChunkFilename =
               `_fresh/js/c/[contenthash].mjs`;
+            compilation.outputOptions.cssChunkFilename =
+              `_fresh/js/c/[contenthash].css`;
           } else {
             compilation.outputOptions.filename =
               `_fresh/js/${compilationId}/[id].mjs`;
@@ -155,7 +302,16 @@ export class FreshPlugin {
               `_fresh/js/${compilationId}/[id].mjs`;
             compilation.outputOptions.workerChunkFilename =
               `_fresh/js/${compilationId}/[id].mjs`;
+            compilation.outputOptions.cssChunkFilename =
+              `_fresh/js/${compilationId}/[id].css`;
           }
+          const cssChunkFilename = compilation.outputOptions.cssChunkFilename;
+          compilation.outputOptions.cssFilename = (pathData) => {
+            const name = pathData.chunk?.name;
+            return typeof name === "string" && userEntries.has(name)
+              ? "[name].css"
+              : cssChunkFilename;
+          };
           // Assets are always content-addressed
           compilation.outputOptions.assetModuleFilename =
             `_fresh/js/c/[hash][ext][query]`;
@@ -179,6 +335,39 @@ export class FreshPlugin {
 
             const staticFiles = new Map<string, CacheStaticFile>();
 
+            const routeEntrypoints = new Set<Webpack.ChunkGroup>();
+            const routeCss = new Map<string, string[]>();
+            for (const route of compilation.freshRouteCss) {
+              const entrypoint = compilation.entrypoints.get(route.entryName);
+              assert(
+                entrypoint,
+                `unable to find route css entrypoint: ${route.entryName}`,
+              );
+              routeEntrypoints.add(entrypoint);
+              routeCss.set(route.filePath, getCssFiles(`/`, entrypoint));
+            }
+            for (const entrypoint of routeEntrypoints) {
+              for (const chunk of entrypoint.chunks) {
+                const routeOnly = [...chunk.groupsIterable].every((g) =>
+                  routeEntrypoints.has(g)
+                );
+                if (!routeOnly) continue;
+                const deleted = new Set<string>();
+                for (const file of chunk.files) {
+                  if (isCssFile(file)) continue;
+                  deleted.add(file);
+                }
+                for (const file of chunk.auxiliaryFiles) {
+                  if (deleted.has(file.replace(/\.map$/, ""))) {
+                    deleted.add(file);
+                  }
+                }
+                for (const file of deleted) {
+                  if (compilation.getAsset(file)) compilation.deleteAsset(file);
+                }
+              }
+            }
+
             const islands = new Map();
             const islandPreparer = new IslandPreparer();
             for (const island of compilation.freshIslands) {
@@ -191,17 +380,18 @@ export class FreshPlugin {
                 `/`,
                 entrypoint,
               );
+              const css = getCssFiles(`/`, entrypoint);
 
               islandPreparer.prepare(
                 islands,
                 await this.importHelper(island.filePath),
                 file,
                 island.entryName,
-                [],
+                css,
               );
               const importPath = this.pathRelativeToDist(island.filePath);
               cacheOut.push(
-                js`islandPreparer.prepare(islands,await import(${importPath}),${file},${island.entryName},[])`,
+                js`islandPreparer.prepare(islands,await import(${importPath}),${file},${island.entryName},${css})`,
               );
             }
 
@@ -209,6 +399,7 @@ export class FreshPlugin {
             const fsRoutes = await Promise.all(
               compilation.freshRoutes.map(async (v) => {
                 const importPath = this.pathRelativeToDist(v.filePath);
+                const css = routeCss.get(v.filePath) ?? [];
                 fsRoutesOut.push(toJsRaw({
                   id: v.id,
                   mod: v.lazy
@@ -217,10 +408,12 @@ export class FreshPlugin {
                   type: v.type,
                   pattern: v.pattern,
                   routePattern: v.routePattern,
+                  css: toJsRaw(css),
                 }));
                 assertAbsolutePath(v.filePath);
                 return {
                   ...v,
+                  css,
                   mod: v.lazy
                     ? () => this.importHelper(v.filePath)
                     : await this.importHelper(v.filePath),
@@ -332,9 +525,46 @@ export class FreshPlugin {
         });
         compilation.freshRoutes = item.routes;
         compilation.freshIslands = [];
+        compilation.freshRouteCss = [];
         compilation.freshRoot = this.pathRelativeToBase(".");
+        this.#islandFiles = new Set(item.islands);
 
         const addEntryPromises = [];
+        if (routeCssEnabled) {
+          let routeId = 0;
+          for (const route of item.routes) {
+            if ((route.type as string) === "middleware") continue;
+            const name = compiler.options.mode === "production"
+              ? `rc${routeId++}`
+              : `rc${manglePath(route.filePath)}`;
+            compilation.freshRouteCss.push({
+              entryName: name,
+              filePath: route.filePath,
+            });
+            addEntryPromises.push(
+              new Promise<void>((res, rej) =>
+                compilation.addEntry(
+                  "",
+                  Webpack.EntryPlugin.createDependency(route.filePath, {
+                    name,
+                  }),
+                  {
+                    name,
+                    layer: ROUTE_CSS_LAYER,
+                    runtime: ROUTE_CSS_RUNTIME,
+                    library: {
+                      type: "module",
+                    },
+                  },
+                  (err) => {
+                    if (err) return rej(err);
+                    res();
+                  },
+                )
+              ),
+            );
+          }
+        }
         let isId = 0;
         for (const island of item.islands) {
           const name = compiler.options.mode === "production"

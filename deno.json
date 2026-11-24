@@ -1,5 +1,7 @@
 {
   "nodeModulesDir": "manual",
+  "lock": false,
+  "unstable": ["raw-imports"],
   "exclude": [
     "**/_fresh/*",
     "**/tmp/*",

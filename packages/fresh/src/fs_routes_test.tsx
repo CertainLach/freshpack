@@ -15,6 +15,7 @@ import * as path from "@std/path";
 async function createServer<T>(
   files: Record<string, string | Uint8Array | FreshFsMod<T>>,
   mountPath?: string,
+  css: Record<string, string[]> = {},
 ): Promise<FakeServer> {
   const fs = createFakeFs(files);
 
@@ -22,8 +23,12 @@ async function createServer<T>(
   const rawFiles = await crawlRouteDir(fs, routeDir, [], () => {});
 
   const fsFiles = rawFiles.map((file) => {
-    // deno-lint-ignore no-explicit-any
-    return { ...file, mod: files[file.filePath] as any };
+    return {
+      ...file,
+      css: css[file.filePath] ?? file.css,
+      // deno-lint-ignore no-explicit-any
+      mod: files[file.filePath] as any,
+    };
   });
 
   const app = new App<T>()
@@ -1707,4 +1712,62 @@ Deno.test("fsRoutes - pattern argument", async () => {
 
   res = await server.get("/mount/foo");
   expect(await res.text()).toEqual("ok");
+});
+
+Deno.test("fsRoutes - merges route file css with module css", async () => {
+  const server = await createServer(
+    {
+      "routes/_app.tsx": {
+        default: (ctx) => (
+          <html>
+            <head />
+            <body>
+              <ctx.Component />
+            </body>
+          </html>
+        ),
+      },
+      "routes/_layout.tsx": {
+        default: (ctx) => <ctx.Component />,
+      },
+      "routes/eager.tsx": {
+        default: () => <h1>eager</h1>,
+        css: ["/mod.css", "/eager.css"],
+      },
+      "routes/lazy.tsx": (() =>
+        Promise.resolve({
+          default: () => <h1>lazy</h1>,
+          css: ["/mod.css"],
+        })) as unknown as FreshFsMod<unknown>,
+    },
+    undefined,
+    {
+      "routes/_app.tsx": ["/app.css"],
+      "routes/_layout.tsx": ["/layout.css"],
+      "routes/eager.tsx": ["/eager.css"],
+      "routes/lazy.tsx": ["/lazy.css"],
+    },
+  );
+
+  const stylesheets = async (pathname: string) => {
+    const res = await server.get(pathname);
+    const doc = parseHtml(await res.text());
+    return Array.from(
+      doc.head.querySelectorAll('link[rel="stylesheet"]'),
+      (link) => link.getAttribute("href"),
+    ).sort();
+  };
+
+  expect(await stylesheets("/eager")).toEqual([
+    "/app.css",
+    "/eager.css",
+    "/layout.css",
+    "/mod.css",
+  ]);
+  expect(await stylesheets("/lazy")).toEqual([
+    "/app.css",
+    "/layout.css",
+    "/lazy.css",
+    "/mod.css",
+  ]);
 });

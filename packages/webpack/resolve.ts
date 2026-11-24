@@ -13,7 +13,7 @@ import { dirname } from "@std/path";
 import { defineRequire } from "./requireHook.ts";
 import { registerDenoLoader } from "./transpileLoader.ts";
 
-const internalTranspileLoader = defineRequire(
+export const internalTranspileLoader: string = defineRequire(
   "@freshpack/webpack/internal-deno-transpile-loader",
   await import("./transpileLoader.ts"),
 );

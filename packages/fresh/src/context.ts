@@ -572,7 +572,7 @@ export class Context<State> {
   ): Response {
     const raw = typeof stream === "function" ? stream() : stream;
 
-    const body = ReadableStream.from(raw)
+    const body = iterableToStream(raw)
       .pipeThrough(
         new TransformStream({
           transform(chunk, controller) {
@@ -689,4 +689,25 @@ function getHeadersFromInit(init?: ResponseInit) {
   return init.headers !== undefined
     ? init.headers instanceof Headers ? init.headers : new Headers(init.headers)
     : new Headers();
+}
+
+function iterableToStream<T>(
+  iterable: Iterable<T> | AsyncIterable<T>,
+): ReadableStream<T> {
+  const iterator = Symbol.asyncIterator in iterable
+    ? iterable[Symbol.asyncIterator]()
+    : iterable[Symbol.iterator]();
+  return new ReadableStream<T>({
+    async pull(controller) {
+      const result = await iterator.next();
+      if (result.done) {
+        controller.close();
+      } else {
+        controller.enqueue(result.value);
+      }
+    },
+    async cancel(reason) {
+      await iterator.return?.(reason);
+    },
+  });
 }

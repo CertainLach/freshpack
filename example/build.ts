@@ -2,11 +2,7 @@
 
 import Webpack from "webpack";
 import CopyPlugin from "copy-webpack-plugin";
-import {
-  DenoLoaderPlugin,
-  DenoPreactRefreshPlugin,
-  FreshPlugin,
-} from "@freshpack/webpack";
+import { DenoPreactRefreshPlugin, FreshPlugin } from "@freshpack/webpack";
 
 const DEBUG_RESOLVED = false;
 
@@ -19,9 +15,7 @@ export function createConfig(
     // Note: if you don't want to use webpack css support, you should not remove `entry` key completely,
     // instead replace it with `entry: {}` so webpack does not use its own default entry handling.
     // Island entries are created automatically, no need to specify them here.
-    entry: {
-      style: "./client/style.css",
-    },
+    entry: {},
     optimization: {
       runtimeChunk: "single",
       usedExports: true,
@@ -31,9 +25,6 @@ export function createConfig(
         maxInitialRequests: Infinity,
         maxAsyncRequests: Infinity,
       },
-    },
-    experiments: {
-      css: true,
     },
     output: {
       clean: true,
@@ -75,9 +66,9 @@ export function createConfig(
       mode !== "production" ? new Webpack.HotModuleReplacementPlugin() : null,
       mode !== "production" ? new DenoPreactRefreshPlugin({}) : null,
 
-      new DenoLoaderPlugin({ debug: DEBUG_RESOLVED }),
-
-      new FreshPlugin(new URL(".", import.meta.url), (path) => import(path)),
+      new FreshPlugin(new URL(".", import.meta.url), (path) => import(path), {
+        deno: { debug: DEBUG_RESOLVED },
+      }),
 
       // Copied assets are added to build cache.
       new CopyPlugin({ patterns: ["static"] }),
