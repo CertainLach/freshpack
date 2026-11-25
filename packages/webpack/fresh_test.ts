@@ -123,3 +123,14 @@ Deno.test("FreshPlugin - cache.mjs serves file routes", async () => {
   res = await handler(new Request("http://localhost/"));
   assertEquals(await res.text(), "index");
 });
+
+Deno.test("FreshPlugin - ignores test files in routes by default", async () => {
+  const handler = (await prodApp()).handler();
+
+  const res = await handler(new Request("http://localhost/ignored_test"));
+  assertEquals(res.status, 404);
+  await res.body?.cancel();
+
+  const cacheSource = await Deno.readTextFile(join(DIST, "cache.mjs"));
+  assert(!cacheSource.includes("ignored_test"));
+});

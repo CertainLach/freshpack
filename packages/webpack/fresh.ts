@@ -1,6 +1,7 @@
 import {
   crawlFsItem,
   type FsRouteFileNoMod,
+  TEST_FILE_PATTERN,
 } from "@freshpack/core/internal-dev";
 import Webpack from "webpack";
 import { assertAbsolutePath, assertDirURL, manglePath } from "./util.ts";
@@ -120,6 +121,7 @@ export interface FreshPluginOptions {
   islandDir?: string | URL;
   routeDir?: string | URL;
   clientEntry?: string | URL;
+  ignore?: RegExp[];
 }
 
 export class FreshPlugin {
@@ -522,7 +524,7 @@ export class FreshPlugin {
         const item = await crawlFsItem({
           islandDir: this.resolvePath(this.options.islandDir ?? "islands"),
           routeDir: this.resolvePath(this.options.routeDir ?? "routes"),
-          ignore: [],
+          ignore: this.options.ignore ?? [TEST_FILE_PATTERN],
         });
         compilation.freshRoutes = item.routes;
         compilation.freshIslands = [];
