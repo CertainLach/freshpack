@@ -59,19 +59,20 @@ Deno.test("no-client-js - static page emits no module boot script", async () => 
   expect(doc.querySelector("h1")?.textContent).toEqual("Hello");
 });
 
-Deno.test("no-client-js - static page does not reference fresh-runtime.js", async () => {
+Deno.test("no-client-js - static page does not reference the client entry", async () => {
   const app = new App().get("/", (ctx) =>
     ctx.render(
       <Doc>
         <p>Hi</p>
       </Doc>,
     ));
+  allIslandCache(app);
 
   const server = new FakeServer(app.handler());
   const res = await server.get("/");
   const html = await res.text();
 
-  expect(html).not.toContain("fresh-runtime");
+  expect(html).not.toContain(allIslandCache.clientEntry);
   expect(html).not.toContain("boot(");
 });
 
@@ -133,13 +134,14 @@ Deno.test("no-client-js - f-client-nav='false' page emits no boot script", async
       </html>
     ))
     .get("/", (ctx) => ctx.render(<p>Static</p>));
+  allIslandCache(app);
 
   const server = new FakeServer(app.handler());
   const res = await server.get("/");
   const html = await res.text();
 
   expect(html).not.toContain("boot(");
-  expect(html).not.toContain("fresh-runtime");
+  expect(html).not.toContain(allIslandCache.clientEntry);
 });
 
 // ---------------------------------------------------------------------------
@@ -158,14 +160,14 @@ Deno.test("no-client-js - island page includes boot script", async () => {
   expect(html).toContain("boot(");
 });
 
-Deno.test("no-client-js - island page references fresh-runtime.js", async () => {
+Deno.test("no-client-js - island page imports the client entry", async () => {
   const app = islandApp();
 
   const server = new FakeServer(app.handler());
   const res = await server.get("/");
   const html = await res.text();
 
-  expect(html).toContain("fresh-runtime");
+  expect(html).toContain(allIslandCache.clientEntry);
 });
 
 Deno.test("no-client-js - island page has Link modulepreload header", async () => {
@@ -177,5 +179,5 @@ Deno.test("no-client-js - island page has Link modulepreload header", async () =
   const link = res.headers.get("Link");
   expect(link).not.toBeNull();
   expect(link).toContain("modulepreload");
-  expect(link).toContain("fresh-runtime");
+  expect(link).toContain(allIslandCache.clientEntry);
 });

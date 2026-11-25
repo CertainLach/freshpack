@@ -7,9 +7,19 @@ import { DEFAULT_CONN_INFO } from "./app.ts";
 import type { Command } from "./commands.ts";
 import { fsItemsToCommands, type FsRouteFile } from "./fs_routes.ts";
 import * as path from "@std/path";
-import { toPosix } from "./dev/dev_build_cache.ts";
+import { contentType as getStdContentType } from "@std/media-types/content-type";
+import { toPosix } from "./dev/fs_crawl.ts";
 
 const STUB = {} as unknown as Deno.ServeHandlerInfo;
+
+export function getContentType(filePath: string): string {
+  return getStdContentType(path.extname(filePath)) ?? "text/plain";
+}
+
+export function systemPathToUrlEncoded(systemPath: string): string {
+  const components = toPosix(systemPath).split("/").filter((comp) => comp);
+  return "/" + components.map((comp) => encodeURIComponent(comp)).join("/");
+}
 
 export class FakeServer {
   constructor(

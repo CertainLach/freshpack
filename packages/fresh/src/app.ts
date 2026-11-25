@@ -332,7 +332,7 @@ export class App<State> {
   }
 
   /**
-   * Insert file routes collected in {@linkcode Builder} at this point.
+   * Insert file routes from the build cache at this point.
    * @param pattern Append file routes at this pattern instead of the root
    * @returns
    */

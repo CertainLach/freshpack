@@ -3,12 +3,7 @@ import {
   type FsRouteFileNoMod,
 } from "@freshpack/core/internal-dev";
 import Webpack from "webpack";
-import {
-  assertAbsolutePath,
-  assertDirURL,
-  manglePath,
-  stripFileUrl,
-} from "./util.ts";
+import { assertAbsolutePath, assertDirURL, manglePath } from "./util.ts";
 import { assert } from "@std/assert";
 import { IslandPreparer, ProdBuildCache } from "@freshpack/core/internal";
 import {
@@ -122,6 +117,9 @@ export interface FreshPluginOptions {
   env?: DenoEnvOptions;
   rawImports?: RawImportsOptions;
   deno?: WorkspaceOptions;
+  islandDir?: string | URL;
+  routeDir?: string | URL;
+  clientEntry?: string | URL;
 }
 
 export class FreshPlugin {
@@ -144,6 +142,9 @@ export class FreshPlugin {
       );
       this.importHelper = (path: string) => import(path);
     }
+  }
+  resolvePath(path: string | URL): string {
+    return fromFileUrl(new URL(path, this.baseUrl));
   }
   pathRelativeToBase(path: string) {
     return relativePosix(this.baseUrl.pathname, path);
@@ -519,8 +520,8 @@ export class FreshPlugin {
         );
 
         const item = await crawlFsItem({
-          islandDir: stripFileUrl(new URL("islands", this.baseUrl).href),
-          routeDir: stripFileUrl(new URL("routes", this.baseUrl).href),
+          islandDir: this.resolvePath(this.options.islandDir ?? "islands"),
+          routeDir: this.resolvePath(this.options.routeDir ?? "routes"),
           ignore: [],
         });
         compilation.freshRoutes = item.routes;
@@ -594,7 +595,9 @@ export class FreshPlugin {
         }
         {
           const name = "client-entry";
-          const file = stripFileUrl(new URL("./client.ts", this.baseUrl).href);
+          const file = this.resolvePath(
+            this.options.clientEntry ?? "./client.ts",
+          );
           addEntryPromises.push(
             new Promise<void>((res, rej) =>
               compilation.addEntry(

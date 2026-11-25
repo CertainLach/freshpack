@@ -401,10 +401,13 @@ export class DenoLoaderPlugin {
                 dependencyType,
               });
 
+              if (requestRequest.startsWith("data:")) {
+                span.resolved("builtin data uri");
+                return;
+              }
               if (
-                requestRequest.startsWith("data:") ||
                 requestRequest.startsWith("https:") &&
-                  !requestRequest.startsWith("https://jsr.io/")
+                !requestRequest.startsWith("https://jsr.io/")
               ) {
                 // IDK why those requests even land in this method in some circumstances, returning false
                 // here makes them being processed by the handlers below. Most probably I'm missing something,

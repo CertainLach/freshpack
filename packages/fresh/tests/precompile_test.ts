@@ -1,16 +1,5 @@
 import { expect } from "@std/expect";
 
-Deno.test("JSX precompile - check config", async () => {
-  const { stderr, success } = await new Deno.Command(Deno.execPath(), {
-    args: ["run", "-A", "dev.ts"],
-    cwd: new URL("./fixture_precompile/invalid", import.meta.url),
-  }).output();
-
-  const stderrText = new TextDecoder().decode(stderr);
-  expect(stderrText).toContain("jsxPrecompileSkipElements to contain");
-  expect(success).toEqual(false);
-});
-
 Deno.test("JSX precompile - run vnode hooks", async () => {
   const { stdout, success } = await new Deno.Command(Deno.execPath(), {
     args: ["run", "-A", "main.tsx"],

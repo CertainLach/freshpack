@@ -30,6 +30,8 @@ import { FakeServer } from "../src/test_utils.ts";
 import { PARTIAL_SEARCH_PARAM } from "../src/constants.ts";
 import { ComputedSignal } from "./fixtures_islands/Computed.tsx";
 import { EnvIsland } from "./fixtures_islands/EnvIsland.tsx";
+import { Map as GlobalMap } from "./fixtures_islands/GlobalName.tsx";
+import * as path from "@std/path";
 
 Deno.env.set("FRESH_PUBLIC_TEST_FOO", "test-env-value");
 Deno.env.set("FRESH_PRIVATE_TEST_FOO", "i-should-not-be-visible");
@@ -712,31 +714,44 @@ Deno.test({
         .evaluate((el) => el.textContent);
       const denoEnv2 = await page.locator<HTMLDivElement>(".deno-env-2")
         .evaluate((el) => el.textContent);
-      const processEnv = await page.locator<HTMLDivElement>(".process-env")
-        .evaluate((el) => el.textContent);
-
-      const denoEnvPrivate = await page.locator<HTMLDivElement>(
-        ".deno-env-private",
-      )
-        .evaluate((el) => el.textContent);
-      const denoEnvPrivate2 = await page.locator<HTMLDivElement>(
-        ".deno-env-private-2",
-      )
-        .evaluate((el) => el.textContent);
-      const processEnvPrivate = await page.locator<HTMLDivElement>(
-        ".process-env-private",
-      )
-        .evaluate((el) => el.textContent);
 
       expect(denoEnv).toEqual("test-env-value");
       expect(denoEnv2).toEqual("test-env-value");
-      expect(processEnv).toEqual("test-env-value");
-
-      expect(denoEnvPrivate).toEqual("ok");
-      expect(denoEnvPrivate2).toEqual("ok");
-      expect(processEnvPrivate).toEqual("ok");
     });
   },
+});
+
+Deno.test({
+  name: "islands - island named after global object (Map)",
+  fn: async () => {
+    const app = testApp()
+      .get("/", (ctx) =>
+        ctx.render(
+          <Doc>
+            <GlobalMap />
+          </Doc>,
+        ));
+
+    const server = new FakeServer(app.handler());
+    const html = await (await server.get("/")).text();
+    expect(html).toMatch(/import\s*\{\s*Map as _Map\s*\}\s*from/);
+    expect(html).toMatch(/boot\(\s*\{\s*_Map\s*\}/);
+
+    await withBrowserApp(app, async (page, address) => {
+      await page.goto(address, { waitUntil: "load" });
+      await page.locator(".ready").wait();
+      await page.locator(".increment").click();
+      await waitForText(page, ".output", "1");
+    });
+  },
+});
+
+Deno.test("islands - private env vars fail the build", async () => {
+  await expect(buildProd({
+    islandDir: path.join(import.meta.dirname!, "fixture_env", "islands"),
+  })).rejects.toThrow(
+    "Env var is not allowed in bundling: FRESH_PRIVATE_TEST_FOO",
+  );
 });
 
 Deno.test({
@@ -797,9 +812,14 @@ Deno.test({
     await res.body?.cancel();
 
     const link = res.headers.get("Link");
+    const island = [...allIslandCache.buildCache.islandRegistry.values()]
+      .find((island) => island.fn === SelfCounter);
 
-    expect(link).toMatch(
-      /<\/_fresh\/js\/[a-zA-Z0-9]+\/fresh-runtime\.js>; rel="modulepreload"; as="script", <\/_fresh\/js\/[a-zA-Z0-9]+\/SelfCounter\.js>; rel="modulepreload"; as="script"/,
+    expect(island).toBeDefined();
+    expect(link).toEqual(
+      `<${allIslandCache.clientEntry}>; rel="modulepreload"; as="script", <${
+        island!.file
+      }>; rel="modulepreload"; as="script"`,
     );
   },
 });

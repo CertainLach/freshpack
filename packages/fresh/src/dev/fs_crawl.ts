@@ -1,11 +1,22 @@
 import { type FsAdapter, fsAdapter } from "../fs.ts";
 import type { WalkEntry } from "@std/fs/walk";
-import { type FsRouteFileNoMod, toPosix } from "./dev_build_cache.ts";
 import * as path from "@std/path";
+import * as pathWin32 from "@std/path/windows";
 import { pathToPattern } from "../router.ts";
 import { CommandType } from "../commands.ts";
-import { sortRoutePaths } from "../fs_routes.ts";
+import { type FsRouteFile, sortRoutePaths } from "../fs_routes.ts";
 import type { RouteConfig } from "../types.ts";
+
+/** Normalize a path to use forward slashes so that generated files
+ *  are portable across operating systems (e.g. build on Windows,
+ *  deploy on Linux). */
+export function toPosix(p: string): string {
+  return p.replaceAll(pathWin32.SEPARATOR, "/");
+}
+
+export type FsRouteFileNoMod<State> = Omit<FsRouteFile<State>, "mod"> & {
+  lazy: boolean;
+};
 
 const GROUP_REG = /[/\\\\]\((_[^/\\\\]+)\)[/\\\\]/;
 

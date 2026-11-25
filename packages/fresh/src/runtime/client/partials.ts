@@ -22,7 +22,7 @@ import {
 import { createRootFragment, isCommentNode, isElementNode } from "./reviver.ts";
 import type { PartialStateJson } from "../server/preact_hooks.ts";
 import { parse } from "../../jsonify/parse.ts";
-import { INTERNAL_PREFIX, PARTIAL_SEARCH_PARAM } from "../../constants.ts";
+import { PARTIAL_SEARCH_PARAM } from "../../constants.ts";
 
 type FreshTrustedTypes = { createHTML(s: string): string };
 type TrustedTypesWindow = {
@@ -543,7 +543,6 @@ export async function applyPartials(res: Response): Promise<void> {
       }
     } else if (child.nodeName === "SCRIPT") {
       const script = child as HTMLScriptElement;
-      if (script.src === `${INTERNAL_PREFIX}/fresh-runtime.js`) return;
 
       // Append data scripts (e.g. application/ld+json for SEO structured
       // data) to the document head. Skip executable script types to

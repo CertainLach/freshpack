@@ -6,7 +6,6 @@
     ".": "./src/mod.ts",
     "./runtime": "./src/runtime/shared.ts",
     "./runtime-client": "./src/runtime/client/mod.ts",
-    "./dev": "./src/dev/mod.ts",
     "./compat": "./src/compat.ts",
     "./internal": "./src/internals.ts",
     "./internal-dev": "./src/internals_dev.ts"
@@ -15,13 +14,10 @@
     "@freshpack/build-id": "workspace:*",
     "@opentelemetry/api": "^1.10.0",
     "@preact/signals": "^2.11.4",
-    "@std/encoding": "jsr:^1.0.11",
     "@std/fmt": "jsr:^1.0.10",
     "@std/fs": "jsr:^1.0.24",
     "@std/html": "jsr:^1.0.7",
     "@std/http": "jsr:^1.1.4",
-    "@std/jsonc": "jsr:^1.0.3",
-    "@std/media-types": "jsr:^1.1.0",
     "@std/net": "jsr:^1.0.7",
     "@std/path": "jsr:^1.1.6",
     "@std/uuid": "jsr:^1.1.2",
@@ -30,11 +26,14 @@
   },
   "devDependencies": {
     "@astral/astral": "jsr:^0.5.6",
+    "@freshpack/webpack": "workspace:*",
     "@std/async": "jsr:^1.5.1",
     "@std/expect": "jsr:^1.0.20",
+    "@std/media-types": "jsr:^1.1.0",
     "@std/streams": "jsr:^1.2.0",
     "@std/testing": "jsr:^1.0.21",
-    "linkedom": "^0.18.15"
+    "linkedom": "^0.18.15",
+    "webpack": "^5.112.2"
   },
   "scripts": {
     "prepack": "raphus"

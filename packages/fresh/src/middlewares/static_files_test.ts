@@ -1,15 +1,16 @@
 import { staticFiles } from "./static_files.ts";
-import { FakeServer, serveMiddleware } from "../test_utils.ts";
+import {
+  FakeServer,
+  getContentType,
+  serveMiddleware,
+  systemPathToUrlEncoded,
+} from "../test_utils.ts";
 import type { BuildCache, StaticFile } from "../build_cache.ts";
 import { expect } from "@std/expect";
 import { ASSET_CACHE_BUST_KEY } from "../constants.ts";
 import { BUILD_ID } from "@freshpack/build-id";
 import type { Command } from "../commands.ts";
 import type { ServerIslandRegistry } from "../context.ts";
-import {
-  getContentType,
-  systemPathToUrlEncoded,
-} from "../dev/dev_build_cache.ts";
 import { App, setBuildCache } from "../app.ts";
 
 class MockBuildCache implements BuildCache {

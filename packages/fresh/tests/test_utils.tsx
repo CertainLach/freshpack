@@ -1,8 +1,11 @@
-import type { App } from "../src/app.ts";
+import { type App, setBuildCache } from "../src/app.ts";
+import type { BuildCache } from "../src/build_cache.ts";
 import { launch, type Page } from "@astral/astral";
 import * as colors from "@std/fmt/colors";
 import { DOMParser, HTMLElement } from "linkedom";
-import { Builder, type BuildOptions } from "../src/dev/builder.ts";
+import Webpack from "webpack";
+import { FreshPlugin } from "@freshpack/webpack";
+import { assertFreshCompilation } from "@freshpack/webpack/fresh";
 import { TextLineStream } from "@std/streams/text-line-stream";
 import * as path from "@std/path";
 import type { ComponentChildren } from "preact";
@@ -53,12 +56,61 @@ export const ISLAND_GROUP_DIR = path.join(
   "fixture_island_groups",
 );
 
+const CLIENT_ENTRY = path.join(import.meta.dirname!, "fixture_client.ts");
+
+export interface BuildProdOptions {
+  root?: string;
+  islandDir?: string;
+}
+
+export type ApplyBuildCache = (<T>(app: App<T>) => void) & {
+  clientEntry: string;
+  buildCache: BuildCache;
+};
+
 export async function buildProd(
-  options: Omit<BuildOptions, "outDir">,
-): Promise<<T>(app: App<T>) => void> {
-  const outDir = await Deno.makeTempDir();
-  const builder = new Builder({ outDir, ...options });
-  return await builder.build({ mode: "production", snapshot: "memory" });
+  options: BuildProdOptions,
+): Promise<ApplyBuildCache> {
+  const root = path.toFileUrl(path.join(options.root ?? Deno.cwd(), "/"));
+  const compiler = Webpack({
+    mode: "production",
+    target: "web",
+    entry: {},
+    devtool: false,
+    optimization: {
+      runtimeChunk: "single",
+      splitChunks: { chunks: "all" },
+    },
+    output: {
+      path: await Deno.makeTempDir(),
+      chunkFormat: "module",
+      chunkLoading: "import",
+      workerChunkLoading: "import",
+    },
+    plugins: [
+      new FreshPlugin(root, (specifier) => import(specifier), {
+        islandDir: options.islandDir,
+        clientEntry: CLIENT_ENTRY,
+      }),
+    ],
+  })!;
+  const stats = await new Promise<Webpack.Stats>((resolve, reject) =>
+    compiler.run((err, stats) => err ? reject(err) : resolve(stats!))
+  );
+  await new Promise<void>((resolve, reject) =>
+    compiler.close((err) => err ? reject(err) : resolve())
+  );
+  if (stats.hasErrors()) {
+    throw new Error(stats.toString("errors-only"));
+  }
+  const compilation = stats.compilation;
+  assertFreshCompilation(compilation);
+  const cache = compilation.prodBuildCache;
+  return Object.assign(
+    <T,>(app: App<T>) =>
+      setBuildCache(app, cache as BuildCache<T>, "production"),
+    { clientEntry: cache.clientEntry, buildCache: cache },
+  );
 }
 
 export async function withBrowserApp(
@@ -352,13 +404,4 @@ export function getStdOutput(
   const stderr = colors.stripAnsiCode(decoderErr.decode(out.stderr));
 
   return { stdout, stderr };
-}
-
-const ISLAND_FIXTURE_DIR = path.join(import.meta.dirname!, "fixtures_islands");
-const allIslandBuilder = new Builder({});
-for await (const entry of Deno.readDirSync(ISLAND_FIXTURE_DIR)) {
-  if (entry.name.endsWith(".json")) continue;
-
-  const spec = path.join(ISLAND_FIXTURE_DIR, entry.name);
-  allIslandBuilder.registerIsland(spec);
 }
