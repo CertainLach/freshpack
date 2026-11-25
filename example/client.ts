@@ -5,7 +5,7 @@ import { boot } from "@freshpack/core/runtime-client";
 if (Deno.env.get("NODE_ENV") !== "production") {
   // For preact devtools
   await import("preact/debug");
-  // Client-side of hmr, connects to server middleware websocket and calls webpack on update
+  // Client-side of hmr, connects to server middleware event stream and calls webpack on update
   await import("@freshpack/runtime/client-hmr");
 }
 

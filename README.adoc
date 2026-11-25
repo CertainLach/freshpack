@@ -55,6 +55,22 @@ webpack 5.102.1 compiled in 1286 ms
 
 Open https://localhost:8000/ and encounter a working fresh example, edit any file - and it will be hot reloaded
 
+=== Server-side hot updates
+
+On a deno with `import.meta.hot` and `--watch-hmr`, pass the hot context of the module that defines the import helper to the plugin:
+
+[source,ts]
+----
+new FreshPlugin(new URL(".", import.meta.url), (path) => import(path), {
+  hot: import.meta.hot,
+})
+----
+
+Routes, islands and everything they import are then evaluated again in the running dev server, and the browser reloads the page once the build cache is updated.
+If only islands and modules reachable solely through them changed, the page is not reloaded and the update is applied by the client-side HMR, keeping island state.
+A change reaching a module outside of that graph (`app.ts`, `dev.ts`, `build.ts`) still restarts the process.
+Without `import.meta.hot` the option is `undefined` and every server-side change restarts the process.
+
 For production:
 
 [source,sh]

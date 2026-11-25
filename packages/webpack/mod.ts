@@ -1,5 +1,9 @@
 export { DenoEnvPlugin } from "./denoEnv.ts";
-export { FreshPlugin, type FreshPluginOptions } from "./fresh.ts";
+export {
+  FreshPlugin,
+  type FreshPluginOptions,
+  type HotContext,
+} from "./fresh.ts";
 export { ViteIgnorePlugin } from "./viteComment.ts";
 export { DenoPreactRefreshPlugin } from "./prefresh-forked/index.ts";
 export { DenoLoaderPlugin } from "./resolve.ts";

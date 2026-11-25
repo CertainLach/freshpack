@@ -51,7 +51,9 @@ export default function denoTranspileLoader(
     if (loaded.kind !== "module") {
       throw new Error(`deno loader returned ${loaded.kind} for ${specifier}`);
     }
-    return splitSourceMap(new TextDecoder().decode(loaded.code));
+    const result = splitSourceMap(new TextDecoder().decode(loaded.code));
+    if (result.map?.sources.length === 1) result.map.sources = [resourcePath];
+    return result;
   })().then(
     ({ code, map }) => callback(null, code, map),
     (e) => callback(e),

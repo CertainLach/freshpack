@@ -15,7 +15,7 @@ import { setUnmapping } from "./internal.ts";
 import * as memfs from "memfs";
 import { AsyncLocalStorage } from "node:async_hooks";
 
-export const HMR_SOCKET_PATH = "/_freshpack_hmr";
+export const HMR_PATH = "/_fresh/hmr";
 
 type Handler = (
   req: Request,
@@ -79,21 +79,37 @@ export function createDevHandler<State>(
     new memfs.Volume(),
   ) as unknown as Webpack.Compiler["outputFileSystem"];
 
-  const sockets = new Set<WebSocket>();
+  const encoder = new TextEncoder();
+  const clients = new Set<ReadableStreamDefaultController<Uint8Array>>();
   const broadcast = (message: unknown) => {
-    const json = JSON.stringify(message);
-    for (const socket of sockets) socket.send(json);
+    const chunk = encoder.encode(`data: ${JSON.stringify(message)}\n\n`);
+    for (const client of clients) client.enqueue(chunk);
   };
 
-  const hmrSocket: Middleware<State> = (ctx) => {
-    if (ctx.url.pathname !== HMR_SOCKET_PATH) return ctx.next();
-    const { response, socket } = Deno.upgradeWebSocket(ctx.req);
-    socket.addEventListener("open", () => sockets.add(socket));
-    socket.addEventListener("close", () => sockets.delete(socket));
-    return Promise.resolve(response);
+  const hmrEvents: Middleware<State> = (ctx) => {
+    if (ctx.url.pathname !== HMR_PATH) return ctx.next();
+    let client: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        client = controller;
+        clients.add(client);
+        client.enqueue(encoder.encode(": connected\n\n"));
+      },
+      cancel() {
+        clients.delete(client);
+      },
+    });
+    return Promise.resolve(
+      new Response(body, {
+        headers: {
+          "content-type": "text/event-stream",
+          "cache-control": "no-cache",
+        },
+      }),
+    );
   };
 
-  const dev = createDevApp(app, compiler.context, hmrSocket);
+  const dev = createDevApp(app, compiler.context, hmrEvents);
 
   let compiled = Promise.withResolvers<void>();
   compiler.hooks.invalid.tap("FreshpackDev", () => {
@@ -112,7 +128,12 @@ export function createDevHandler<State>(
       stats.compilation.prodBuildCache as ProdBuildCache<State>,
     );
     setUnmapping(stats.compilation.unmapping);
-    broadcast({ done: { hash: stats.hash } });
+    broadcast({
+      done: {
+        hash: stats.hash,
+        reload: stats.compilation.freshReload,
+      },
+    });
     compiled.resolve();
   });
 

@@ -24,7 +24,11 @@ import { js, type JsRaw, toJsRaw } from "./quasiquote.ts";
 import type { WorkspaceOptions } from "@deno/loader";
 import { DenoLoaderPlugin, internalTranspileLoader } from "./resolve.ts";
 import { defineRequire } from "./requireHook.ts";
-import { ISLAND_QUERY, registerServerGraph } from "./serverGraphLoader.ts";
+import {
+  ISLAND_QUERY,
+  registerServerGraph,
+  SOURCE_HASH,
+} from "./serverGraphLoader.ts";
 import { type GraphOptions, ServerGraphRules } from "./serverGraph.ts";
 
 const internalServerGraphLoader = defineRequire(
@@ -42,6 +46,7 @@ interface WebpackFreshCompilation extends Webpack.Compilation {
   freshRouteCss: { entryName: string; filePath: string }[];
   freshRoot: string;
   buildId: string;
+  freshReload: boolean;
 
   prodBuildCache: ProdBuildCache<unknown>;
 }
@@ -115,7 +120,13 @@ function getChunkFiles(
   return e.getFiles().map((v) => joinPosix(basePath, v));
 }
 
+export interface HotContext {
+  accept(dep: string, callback?: () => void): void;
+  addStatusHandler(handler: (status: string) => void): void;
+}
+
 export interface FreshPluginOptions {
+  hot?: HotContext;
   env?: DenoEnvOptions;
   rawImports?: RawImportsOptions;
   deno?: WorkspaceOptions;
@@ -159,6 +170,75 @@ export class FreshPlugin {
     return relativePosix(this.#dist, path);
   }
   #graphRules?: ServerGraphRules;
+  #hotAccepted = false;
+  #serverUpdated = false;
+  #htmlDigest?: string;
+  #islandDigest?: string;
+
+  #digest(modules: Iterable<Webpack.Module>): string {
+    const lines = [];
+    for (const module of modules) {
+      const info = module.buildInfo;
+      lines.push(
+        `${module.identifier()} ${info?.[SOURCE_HASH] ?? info?.hash ?? ""}`,
+      );
+    }
+    return lines.sort().join("\n");
+  }
+
+  #needsReload(
+    compilation: WebpackFreshCompilation,
+    serverUpdated: boolean,
+  ): boolean {
+    const html = [];
+    for (const module of compilation.modules) {
+      if (module.layer !== SERVER_GRAPH_LAYER) continue;
+      const resource = (module as Webpack.NormalModule).resource;
+      if (!resource?.endsWith(ISLAND_QUERY)) html.push(module);
+    }
+    const island = new Set<Webpack.Module>();
+    for (const { entryName } of compilation.freshIslands) {
+      for (
+        const chunk of compilation.entrypoints.get(entryName)?.chunks ?? []
+      ) {
+        for (
+          const module of compilation.chunkGraph.getChunkModulesIterable(chunk)
+        ) {
+          island.add(module);
+        }
+      }
+    }
+    const htmlDigest = this.#digest(html);
+    const islandDigest = this.#digest(island);
+    const islandOnly = htmlDigest === this.#htmlDigest &&
+      islandDigest !== this.#islandDigest;
+    if (serverUpdated || this.#htmlDigest === undefined) {
+      this.#htmlDigest = htmlDigest;
+      this.#islandDigest = islandDigest;
+    }
+    return serverUpdated && !islandOnly;
+  }
+
+  applyHot(compiler: Webpack.Compiler) {
+    this.options.hot?.addStatusHandler((status) => {
+      if (status !== "idle" || !this.#hotAccepted) return;
+      this.#hotAccepted = false;
+      this.#serverUpdated = true;
+      compiler.watching?.invalidate();
+    });
+  }
+
+  #import(
+    compiler: Webpack.Compiler,
+    path: string,
+  ): Promise<Record<string, unknown>> {
+    if (compiler.watchMode) {
+      this.options.hot?.accept(path, () => {
+        this.#hotAccepted = true;
+      });
+    }
+    return this.importHelper(path);
+  }
 
   applyDenoLoader(compiler: Webpack.Compiler): DenoLoaderPlugin {
     const existing = compiler.options.plugins.find((
@@ -268,6 +348,7 @@ export class FreshPlugin {
 
   apply(compiler: Webpack.Compiler) {
     const denoLoader = this.applyDenoLoader(compiler);
+    this.applyHot(compiler);
     {
       // HACK: Webpack does not export EntryDependency, and it is impossible to use EntryPlugin, as
       // it wants to modify make stage, yet we have already reached this stage when we want to use
@@ -315,6 +396,8 @@ export class FreshPlugin {
       async (_compilation: Webpack.Compilation) => {
         const compilation = _compilation as WebpackFreshCompilation;
         this.#dist = compilation.outputOptions.path;
+        const serverUpdated = this.#serverUpdated;
+        this.#serverUpdated = false;
 
         const compilationId = Date.now().toString(36);
 
@@ -420,7 +503,7 @@ export class FreshPlugin {
 
               islandPreparer.prepare(
                 islands,
-                await this.importHelper(island.filePath),
+                await this.#import(compiler, island.filePath),
                 file,
                 island.entryName,
                 css,
@@ -451,8 +534,8 @@ export class FreshPlugin {
                   ...v,
                   css,
                   mod: v.lazy
-                    ? () => this.importHelper(v.filePath)
-                    : await this.importHelper(v.filePath),
+                    ? () => this.#import(compiler, v.filePath)
+                    : await this.#import(compiler, v.filePath),
                 };
               }),
             );
@@ -544,6 +627,10 @@ export class FreshPlugin {
               });
             };
             compilation.prodBuildCache = cache;
+            compilation.freshReload = this.#needsReload(
+              compilation,
+              serverUpdated,
+            );
 
             compilation.emitAsset(
               "./cache.mjs",

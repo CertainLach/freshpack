@@ -4,6 +4,7 @@ import { ImportType, init, parse } from "es-module-lexer";
 import type { LoaderContext } from "webpack";
 
 export const ISLAND_QUERY = "?fresh-island";
+export const SOURCE_HASH = "freshSourceHash";
 
 export interface ServerGraph {
   loader: () => Promise<Loader>;
@@ -88,6 +89,12 @@ export default function serverGraphLoader(
   if (this.resourceQuery === ISLAND_QUERY) {
     callback(null, "export {};");
     return;
+  }
+  const buildInfo = this._module?.buildInfo;
+  if (buildInfo) {
+    buildInfo[SOURCE_HASH] = this.utils.createHash().update(source).digest(
+      "hex",
+    );
   }
   const graph = registry.get(this.getOptions().id);
   if (!graph) {

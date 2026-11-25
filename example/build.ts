@@ -61,13 +61,14 @@ export function createConfig(
     stats: {
       colors: true,
     },
-    devtool: mode === "production" ? "source-map" : "cheap-source-map",
+    devtool: mode === "production" ? "source-map" : "cheap-module-source-map",
     plugins: [
       mode !== "production" ? new Webpack.HotModuleReplacementPlugin() : null,
       mode !== "production" ? new DenoPreactRefreshPlugin({}) : null,
 
       new FreshPlugin(new URL(".", import.meta.url), (path) => import(path), {
         deno: { debug: DEBUG_RESOLVED },
+        hot: import.meta.hot,
       }),
 
       // Copied assets are added to build cache.

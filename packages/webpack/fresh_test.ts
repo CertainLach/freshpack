@@ -36,11 +36,11 @@ class EmitStaticPlugin {
   }
 }
 
-async function build(
-  dist = DIST,
-  options: FreshPluginOptions = {},
-): Promise<ProdBuildCache<unknown>> {
-  const compiler = Webpack({
+function createCompiler(
+  dist: string,
+  options: FreshPluginOptions,
+): Webpack.Compiler {
+  return Webpack({
     mode: "production",
     target: "web",
     entry: {},
@@ -61,6 +61,13 @@ async function build(
       new EmitStaticPlugin(),
     ],
   })!;
+}
+
+async function build(
+  dist = DIST,
+  options: FreshPluginOptions = {},
+): Promise<ProdBuildCache<unknown>> {
+  const compiler = createCompiler(dist, options);
   const stats = await new Promise<Webpack.Stats>((resolve, reject) =>
     compiler.run((err, stats) => err ? reject(err) : resolve(stats!))
   );
@@ -181,4 +188,62 @@ Deno.test("FreshPlugin - graph exclude skips packages", async () => {
   assert(!cacheSource.includes("LibIsland"));
   assert(!/\.lib-widget/.test(await routeCss("/lib", dist)));
   await Deno.remove(dist, { recursive: true });
+});
+
+Deno.test("FreshPlugin - hot reloads the page unless only islands changed", async () => {
+  const accepted = new Map<string, () => void>();
+  const statusHandlers: ((status: string) => void)[] = [];
+  const dist = await Deno.makeTempDir();
+  const compiler = createCompiler(dist, {
+    hot: {
+      accept: (dep, callback) => accepted.set(dep, callback!),
+      addStatusHandler: (handler) => statusHandlers.push(handler),
+    },
+  });
+
+  let built = Promise.withResolvers<Webpack.Compilation>();
+  compiler.hooks.done.tap("Test", (stats) => built.resolve(stats.compilation));
+  const watching = compiler.watch({}, () => {})!;
+
+  let compilation = await built.promise;
+  assertFreshCompilation(compilation);
+  assertEquals(compilation.freshReload, false);
+  const island = [...accepted.keys()].find((path) =>
+    path.endsWith("LibIsland.ts")
+  );
+  assert(island, "island is not accepted");
+
+  const serverUpdate = async () => {
+    built = Promise.withResolvers();
+    accepted.get(island)!();
+    for (const handler of statusHandlers) handler("apply");
+    for (const handler of statusHandlers) handler("idle");
+    const compilation = await built.promise;
+    assertFreshCompilation(compilation);
+    return compilation.freshReload;
+  };
+  const edit = async (path: string) => {
+    const source = await Deno.readTextFile(path);
+    built = Promise.withResolvers();
+    await Deno.writeTextFile(path, source + "\nexport const edited = 1;\n");
+    await built.promise;
+    return () => Deno.writeTextFile(path, source);
+  };
+
+  const restore = [];
+  try {
+    assertEquals(await serverUpdate(), true);
+
+    restore.push(await edit(island));
+    assertEquals(await serverUpdate(), false);
+
+    restore.push(
+      await edit(fromFileUrl(new URL("routes/lib.ts", FIXTURE))),
+    );
+    assertEquals(await serverUpdate(), true);
+  } finally {
+    await new Promise<void>((resolve) => watching.close(() => resolve()));
+    for (const fn of restore) await fn();
+    await Deno.remove(dist, { recursive: true });
+  }
 });

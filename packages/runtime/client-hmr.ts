@@ -92,8 +92,8 @@ async function signalled() {
 }
 
 function connect(reloadOnOpen: boolean) {
-  const ws = new WebSocket("/_freshpack_hmr");
-  ws.addEventListener("open", () => {
+  const events = new EventSource("/_fresh/hmr");
+  events.addEventListener("open", () => {
     if (reloadOnOpen) {
       console.info("[HMR]", "dev server is back, reloading");
       location.reload();
@@ -101,7 +101,7 @@ function connect(reloadOnOpen: boolean) {
     }
     console.info("[HMR]", "opened");
   });
-  ws.addEventListener("message", (msg) => {
+  events.addEventListener("message", (msg) => {
     const data = JSON.parse(msg.data);
     if (data === "invalid") {
       console.info("[HMR]", "webpack is working...");
@@ -109,10 +109,16 @@ function connect(reloadOnOpen: boolean) {
       const hash = data.done.hash;
       lastHash = hash;
       console.info("[HMR]", "webpack rebuilt", hash);
+      if (data.done.reload) {
+        console.info("[HMR]", "server modules updated, reloading");
+        location.reload();
+        return;
+      }
       signalled();
     }
   });
-  ws.addEventListener("close", () => {
+  events.addEventListener("error", () => {
+    events.close();
     console.info("[HMR]", "closed, waiting for dev server");
     setTimeout(() => connect(true), 1000);
   });
