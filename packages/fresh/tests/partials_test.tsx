@@ -22,6 +22,7 @@ import { JsonIsland } from "./fixtures_islands/JsonIsland.tsx";
 import { OptOutPartialLink } from "./fixtures_islands/OptOutPartialLink.tsx";
 import * as path from "@std/path";
 import { retry } from "@std/async/retry";
+import { delay } from "@std/async/delay";
 
 const loremIpsum = await Deno.readTextFile(
   path.join(import.meta.dirname!, "lorem_ipsum.txt"),
@@ -68,6 +69,60 @@ Deno.test({
       await page.goto(address, { waitUntil: "load" });
       await page.locator(".update").click();
       await waitForText(page, ".output", "partial update");
+    });
+  },
+});
+
+Deno.test({
+  name: "partials - newer navigation cancels a slower pending one",
+  fn: async () => {
+    const slow = Promise.withResolvers<void>();
+    const slowServed = Promise.withResolvers<void>();
+
+    function Page(props: { label: string }) {
+      return (
+        <Doc>
+          <div f-client-nav>
+            <a href="/slow" class="slow">slow</a>
+            <a href="/fast" class="fast">fast</a>
+            <Partial name="body">
+              <p class="output">{props.label}</p>
+            </Partial>
+          </div>
+        </Doc>
+      );
+    }
+
+    const app = testApp()
+      .get("/slow", async (ctx) => {
+        await slow.promise;
+        try {
+          return await ctx.render(<Page label="slow" />);
+        } finally {
+          slowServed.resolve();
+        }
+      })
+      .get("/fast", (ctx) => ctx.render(<Page label="fast" />))
+      .get("/", (ctx) => ctx.render(<Page label="start" />));
+
+    await withBrowserApp(app, async (page, address) => {
+      await page.goto(address, { waitUntil: "load" });
+      await page.locator(".slow").click();
+      await page.locator(".fast").click();
+      await waitForText(page, ".output", "fast");
+
+      slow.resolve();
+      await slowServed.promise;
+      await delay(300);
+
+      const output = await page.locator<HTMLElement>(".output")
+        .evaluate((el) => el.textContent);
+      expect(output).toEqual("fast");
+      expect(await page.evaluate(() => location.pathname)).toEqual("/fast");
+
+      await page.evaluate(() => history.back());
+      await waitForText(page, ".output", "start");
+      expect(await page.evaluate(() => location.pathname)).toEqual("/");
     });
   },
 });

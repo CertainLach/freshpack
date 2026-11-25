@@ -95,6 +95,31 @@ function withViewTransition(update: () => Promise<void>): Promise<void> {
   return update();
 }
 
+interface PartialRequest {
+  controller: AbortController;
+  pushedHistory: boolean;
+}
+
+let pendingRequest: PartialRequest | null = null;
+
+function startPartialRequest(pushesHistory: boolean): PartialRequest {
+  pendingRequest?.controller.abort();
+  const request: PartialRequest = {
+    controller: new AbortController(),
+    pushedHistory: pushesHistory,
+  };
+  pendingRequest = request;
+  return request;
+}
+
+function finishPartialRequest(request: PartialRequest) {
+  if (pendingRequest === request) pendingRequest = null;
+}
+
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "AbortError";
+}
+
 // Keep track of history state to apply forward or backward animations
 let index = history.state?.index || 0;
 if (!history.state) {
@@ -185,15 +210,27 @@ document.addEventListener("click", async (e) => {
       e.preventDefault();
 
       const nextUrl = new URL(el.href);
+      const supersedesPush = pendingRequest?.pushedHistory ?? false;
+      const request = startPartialRequest(true);
       try {
-        maybePushHistory(nextUrl);
+        if (supersedesPush) {
+          maybeReplaceHistory(nextUrl);
+        } else {
+          maybePushHistory(nextUrl);
+        }
 
         const partialUrl = new URL(
           partial ? partial : nextUrl.href,
           location.href,
         );
         await withViewTransition(async () => {
-          await fetchPartials(nextUrl, partialUrl, true);
+          await fetchPartials(
+            nextUrl,
+            partialUrl,
+            true,
+            {},
+            request.controller.signal,
+          );
           updateLinks(nextUrl);
         });
         if (el.hasAttribute(PARTIAL_NO_SCROLL_ATTR)) {
@@ -228,7 +265,11 @@ document.addEventListener("click", async (e) => {
             location.href,
           );
         }
+      } catch (err) {
+        if (isAbortError(err)) return;
+        throw err;
       } finally {
+        finishPartialRequest(request);
         if (indicator !== undefined) {
           indicator.value = false;
         }
@@ -248,7 +289,21 @@ document.addEventListener("click", async (e) => {
         partial,
         location.href,
       );
-      await fetchPartials(partialUrl, partialUrl, false);
+      const request = startPartialRequest(false);
+      try {
+        await fetchPartials(
+          partialUrl,
+          partialUrl,
+          false,
+          {},
+          request.controller.signal,
+        );
+      } catch (err) {
+        if (isAbortError(err)) return;
+        throw err;
+      } finally {
+        finishPartialRequest(request);
+      }
     }
   }
 });
@@ -284,9 +339,10 @@ addEventListener("popstate", async (e) => {
   }
 
   const url = new URL(location.href, location.origin);
+  const request = startPartialRequest(false);
   try {
     await withViewTransition(async () => {
-      await fetchPartials(url, url, true);
+      await fetchPartials(url, url, true, {}, request.controller.signal);
       updateLinks(url);
     });
     scrollTo({
@@ -295,6 +351,8 @@ addEventListener("popstate", async (e) => {
       behavior: "instant",
     });
   } catch (err) {
+    if (isAbortError(err)) return;
+
     // If the response didn't contain a partial, then we can only
     // do a reload.
     if (err instanceof NoPartialsError) {
@@ -303,6 +361,8 @@ addEventListener("popstate", async (e) => {
     }
 
     throw err;
+  } finally {
+    finishPartialRequest(request);
   }
 });
 
@@ -366,11 +426,22 @@ document.addEventListener("submit", async (e) => {
         init = { body: new FormData(el, e.submitter), method: lowerMethod };
       }
 
+      const request = startPartialRequest(false);
       try {
         await withViewTransition(async () => {
-          await fetchPartials(actionUrl, partialUrl, true, init);
+          await fetchPartials(
+            actionUrl,
+            partialUrl,
+            true,
+            init,
+            request.controller.signal,
+          );
         });
+      } catch (err) {
+        if (isAbortError(err)) return;
+        throw err;
       } finally {
+        finishPartialRequest(request);
         if (indicator !== undefined) {
           indicator.value = false;
         }
@@ -412,8 +483,10 @@ async function fetchPartials(
   partialUrl: URL,
   shouldNavigate: boolean,
   init: RequestInit = {},
+  signal?: AbortSignal,
 ) {
   init.redirect = "follow";
+  init.signal = signal;
   partialUrl = new URL(partialUrl);
   partialUrl.searchParams.set(PARTIAL_SEARCH_PARAM, "true");
   const res = await fetch(partialUrl, init);
@@ -427,11 +500,12 @@ async function fetchPartials(
   actualUrl.searchParams.delete(PARTIAL_SEARCH_PARAM);
 
   try {
-    await applyPartials(res);
+    await applyPartials(res, signal);
   } catch (err) {
     // When a redirect leads to a page without partials, fall back
     // to a full page navigation instead of silently failing.
     if (err instanceof NoPartialsError && res.redirected) {
+      signal?.throwIfAborted();
       location.href = actualUrl.href;
       return;
     }
@@ -450,7 +524,10 @@ interface PartialReviveCtx {
 /**
  * Apply partials from a HTML response
  */
-export async function applyPartials(res: Response): Promise<void> {
+export async function applyPartials(
+  res: Response,
+  signal?: AbortSignal,
+): Promise<void> {
   const contentType = res.headers.get("Content-Type");
   if (contentType !== "text/html; charset=utf-8") {
     throw new Error(`Unable to process partial response.`);
@@ -459,6 +536,7 @@ export async function applyPartials(res: Response): Promise<void> {
   const id = res.headers.get("X-Fresh-Id");
 
   const resText = await res.text();
+  signal?.throwIfAborted();
   const doc = new DOMParser().parseFromString(
     freshTrustedTypes.createHTML(resText),
     "text/html",
@@ -482,6 +560,7 @@ export async function applyPartials(res: Response): Promise<void> {
     }
 
     await Promise.all(promises);
+    signal?.throwIfAborted();
   }
 
   const ctx: PartialReviveCtx = {
