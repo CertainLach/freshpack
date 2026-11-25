@@ -1,6 +1,6 @@
 import { type Loader, ResolutionMode } from "@deno/loader";
 import { fromFileUrl, toFileUrl } from "@std/path";
-import { ImportType, init, parse } from "es-module-lexer";
+import { init, parse } from "es-module-lexer";
 import type { LoaderContext } from "webpack";
 
 export const ISLAND_QUERY = "?fresh-island";
@@ -42,8 +42,10 @@ async function collectImports(
   const loader = await graph.loader();
   const referrer = toFileUrl(resourcePath).href;
   const out: string[] = [];
-  for (const { n: specifier, t, at } of imports) {
-    if (t !== ImportType.Static || specifier === undefined) continue;
+  for (const entry of imports) {
+    if (entry.type !== "static" && entry.type !== "reexport-star") continue;
+    if (entry.phase !== null || entry.typeOnly) continue;
+    const { specifier, attributes: at } = entry;
     const isCss = at?.some(([k, v]) => k === "type" && v === "css") ?? false;
     if (at !== null && !isCss) continue;
 

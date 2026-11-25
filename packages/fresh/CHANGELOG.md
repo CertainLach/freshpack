@@ -2,6 +2,16 @@
 
 <!-- bureaucrate goes here -->
 
+## [v4.0.1] 2026-11-25
+
+### Other changes
+
+- build: Update es-module-lexer
+
+### Dependencies
+
+- Updated `@freshpack/build-id` to 1.1.3
+
 ## [v4.0.0] 2026-11-25
 
 ### Breaking changes

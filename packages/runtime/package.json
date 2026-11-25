@@ -1,6 +1,6 @@
 {
   "name": "@freshpack/runtime",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "exports": {
     ".": "./mod.ts",
@@ -14,11 +14,11 @@
   "dependencies": {
     "@freshpack/core": "workspace:*",
     "@freshpack/webpack": "workspace:*",
-    "memfs": "^4.80.0"
+    "memfs": "^4.80.1"
   },
   "devDependencies": {
     "@std/assert": "jsr:^1.0.19",
-    "webpack": "^5.112.2"
+    "webpack": "^5.113.0"
   },
   "peerDependencies": {
     "webpack": "^5.112.2"

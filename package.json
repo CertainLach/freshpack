@@ -12,7 +12,7 @@
     "ok": "deno fmt --check && deno lint && pnpm run check:types && pnpm run test"
   },
   "devDependencies": {
-    "@deltarocks/raphus": "^0.1.0",
+    "@deltarocks/raphus": "^0.1.1",
     "@types/node": "^26.6.6"
   }
 }

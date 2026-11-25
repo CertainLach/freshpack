@@ -5,4 +5,4 @@ packages:
 enableGlobalVirtualStore: true
 
 minimumReleaseAgeExclude:
-  - '@deltarocks/raphus@0.1.0'
+  - '@deltarocks/*'
