@@ -1,100 +1,132 @@
-import type { App, Context, Middleware } from "@freshpack/core";
-import { setBuildCache } from "@freshpack/core/internal";
+import { App, type Middleware } from "@freshpack/core";
+import {
+  type ProdBuildCache,
+  setBuildCache,
+  setErrorInterceptor,
+} from "@freshpack/core/internal";
+import {
+  automaticWorkspaceFolders,
+  devErrorOverlay,
+} from "@freshpack/core/internal-dev";
 import type Webpack from "webpack";
 import { assertFreshCompilation } from "@freshpack/webpack/fresh";
 import { assertUnmapCompilation } from "@freshpack/webpack/unmap";
 import { setUnmapping } from "./internal.ts";
 import * as memfs from "memfs";
+import { AsyncLocalStorage } from "node:async_hooks";
 
-export function webpackHandler<State>(
+export const HMR_SOCKET_PATH = "/_freshpack_hmr";
+
+type Handler = (
+  req: Request,
+  info: Deno.ServeHandlerInfo,
+) => Promise<Response>;
+
+export interface DevApp<State> {
+  handler: Handler;
+  setBuildCache(cache: ProdBuildCache<State>): void;
+}
+
+export function createDevApp<State>(
+  app: App<State>,
+  root: string,
+  ...middlewares: Middleware<State>[]
+): DevApp<State> {
+  const requestErrors = new AsyncLocalStorage<{ error?: unknown }>();
+  setErrorInterceptor(app, (error) => {
+    const store = requestErrors.getStore();
+    if (store !== undefined) store.error = error;
+  });
+
+  let appHandler = app.handler();
+  const devApp = new App<State>({ mode: "development" });
+  for (const middleware of middlewares) devApp.use(middleware);
+  devApp
+    .use(automaticWorkspaceFolders(root))
+    .use(devErrorOverlay())
+    .all("*", async (ctx) => {
+      const store: { error?: unknown } = {};
+      const res = await requestErrors.run(
+        store,
+        () => appHandler(ctx.req, ctx.info),
+      );
+      const isHtml = res.headers.get("content-type")?.includes("text/html");
+      if (store.error !== undefined && res.status >= 500 && !isHtml) {
+        await res.body?.cancel();
+        throw store.error;
+      }
+      return res;
+    });
+  let devHandler = devApp.handler();
+
+  return {
+    handler: (req, info) => devHandler(req, info),
+    setBuildCache(cache) {
+      cache.features.errorOverlay = true;
+      setBuildCache(app, cache, "production");
+      setBuildCache(devApp, cache, "development");
+      appHandler = app.handler();
+      devHandler = devApp.handler();
+    },
+  };
+}
+
+export function createDevHandler<State>(
   app: App<State>,
   compiler: Webpack.Compiler,
-): (ctx: Context<State>) => Promise<Response | Middleware<State>> {
+): Handler {
   compiler.outputFileSystem = memfs.createFsFromVolume(
     new memfs.Volume(),
-  ) as any;
+  ) as unknown as Webpack.Compiler["outputFileSystem"];
 
-  const hmrWatchers = new Set<WebSocket>();
-  const broadcast = (v: unknown) => {
-    const json = JSON.stringify(v);
-    for (const watcher of hmrWatchers) {
-      watcher.send(json);
-    }
+  const sockets = new Set<WebSocket>();
+  const broadcast = (message: unknown) => {
+    const json = JSON.stringify(message);
+    for (const socket of sockets) socket.send(json);
   };
 
-  compiler.hooks.failed.tap("FreshpackHMR", (e) => {
-    console.error("webpack failed", e);
-  });
-  compiler.hooks.invalid.tap("FreshpackHMR", () => {
-    console.error("webpack invalid");
+  const hmrSocket: Middleware<State> = (ctx) => {
+    if (ctx.url.pathname !== HMR_SOCKET_PATH) return ctx.next();
+    const { response, socket } = Deno.upgradeWebSocket(ctx.req);
+    socket.addEventListener("open", () => sockets.add(socket));
+    socket.addEventListener("close", () => sockets.delete(socket));
+    return Promise.resolve(response);
+  };
+
+  const dev = createDevApp(app, compiler.context, hmrSocket);
+
+  let compiled = Promise.withResolvers<void>();
+  compiler.hooks.invalid.tap("FreshpackDev", () => {
+    compiled = Promise.withResolvers();
     broadcast("invalid");
   });
-  // deno-ignore: require-await
-  compiler.hooks.done.tapPromise({
-    name: "FreshpackHMR",
-    before: "FreshpackCompilingWait",
-  }, async (stats) => {
+  compiler.hooks.failed.tap("FreshpackDev", (err) => {
+    console.error("webpack failed", err);
+    compiled.resolve();
+  });
+  compiler.hooks.done.tap("FreshpackDev", (stats) => {
     console.info(stats.toString(compiler.options.stats));
-
     assertFreshCompilation(stats.compilation);
     assertUnmapCompilation(stats.compilation);
-
-    setBuildCache(
-      app as App<unknown>,
-      stats.compilation.prodBuildCache,
-      // development cache works not the way we want to
-      "production",
+    dev.setBuildCache(
+      stats.compilation.prodBuildCache as ProdBuildCache<State>,
     );
     setUnmapping(stats.compilation.unmapping);
     broadcast({ done: { hash: stats.hash } });
+    compiled.resolve();
   });
 
   if (compiler.options.watch) {
-    compiler.watch(compiler.options.watchOptions, () => {
-      // Failure/success is handled by hooks
-    });
+    compiler.watch(compiler.options.watchOptions, () => {});
   } else {
     console.warn(
       "watching is disabled, server won't be reloaded automatically!",
     );
-    compiler.compile(() => {
-      // Failure/success is handled by hooks
-    });
+    compiler.run(() => {});
   }
 
-  return (ctx) => {
-    if (ctx.url.pathname.endsWith("/_freshpack_hmr")) {
-      const { response, socket } = Deno.upgradeWebSocket(ctx.req);
-
-      socket.addEventListener("open", () => {
-        hmrWatchers.add(socket);
-      });
-      socket.addEventListener("close", () => {
-        hmrWatchers.delete(socket);
-      });
-      return Promise.resolve(response);
-    }
-    if (ctx.req.method !== "GET" && ctx.req.method !== "HEAD") {
-      return ctx.next();
-    }
-    return ctx.next();
+  return async (req, info) => {
+    await compiled.promise;
+    return dev.handler(req, info);
   };
-}
-
-export function mkCompilingWaiter(
-  compiler: Webpack.Compiler,
-): () => Promise<void> {
-  let waiter = Promise.withResolvers<void>();
-
-  compiler.hooks.failed.tap("FreshpackCompilingWait", () => {
-    waiter.resolve();
-  });
-  compiler.hooks.invalid.tap("FreshpackCompilingWait", () => {
-    waiter = Promise.withResolvers();
-  });
-  compiler.hooks.done.tap("FreshpackCompilingWait", () => {
-    waiter.resolve();
-  });
-
-  return () => waiter.promise;
 }

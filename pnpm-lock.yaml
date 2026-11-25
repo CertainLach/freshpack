@@ -147,6 +147,10 @@ importers:
       webpack:
         specifier: ^5.112.2
         version: 5.112.2
+    devDependencies:
+      '@std/assert':
+        specifier: jsr:^1.0.19
+        version: '@jsr/std__assert@1.0.19'
     linkDirectory: false
     publishDirectory: dist
 

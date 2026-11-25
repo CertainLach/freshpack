@@ -8,14 +8,17 @@
     "./client-hmr": "./client-hmr.ts",
     "./server-middleware": "./server-middleware.ts"
   },
+  "scripts": {
+    "prepack": "raphus"
+  },
   "dependencies": {
     "@freshpack/core": "workspace:*",
     "@freshpack/webpack": "workspace:*",
     "memfs": "^4.80.0",
     "webpack": "^5.112.2"
   },
-  "scripts": {
-    "prepack": "raphus"
+  "devDependencies": {
+    "@std/assert": "jsr:^1.0.19"
   },
   "publishConfig": {
     "directory": "dist",

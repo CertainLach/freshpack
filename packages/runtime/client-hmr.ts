@@ -91,9 +91,14 @@ async function signalled() {
   await checkUpdates();
 }
 
-if (import.meta.webpackHot) {
+function connect(reloadOnOpen: boolean) {
   const ws = new WebSocket("/_freshpack_hmr");
   ws.addEventListener("open", () => {
+    if (reloadOnOpen) {
+      console.info("[HMR]", "dev server is back, reloading");
+      location.reload();
+      return;
+    }
     console.info("[HMR]", "opened");
   });
   ws.addEventListener("message", (msg) => {
@@ -108,6 +113,11 @@ if (import.meta.webpackHot) {
     }
   });
   ws.addEventListener("close", () => {
-    console.info("[HMR]", "closed");
+    console.info("[HMR]", "closed, waiting for dev server");
+    setTimeout(() => connect(true), 1000);
   });
+}
+
+if (import.meta.webpackHot) {
+  connect(false);
 }
