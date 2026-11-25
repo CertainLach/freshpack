@@ -746,6 +746,24 @@ Deno.test({
   },
 });
 
+Deno.test({
+  name: "islands - discovers islands by path through route imports",
+  fn: async () => {
+    const applyCache = await buildProd({
+      root: path.join(import.meta.dirname!, "fixture_discovered"),
+    });
+    const app = new App().use(staticFiles()).fsRoutes();
+    applyCache(app);
+
+    await withBrowserApp(app, async (page, address) => {
+      await page.goto(address, { waitUntil: "load" });
+      await page.locator(".ready").wait();
+      await page.locator(".increment").click();
+      await waitForText(page, ".output", "1");
+    });
+  },
+});
+
 Deno.test("islands - private env vars fail the build", async () => {
   await expect(buildProd({
     islandDir: path.join(import.meta.dirname!, "fixture_env", "islands"),

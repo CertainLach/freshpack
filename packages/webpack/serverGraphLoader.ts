@@ -3,18 +3,22 @@ import { fromFileUrl, toFileUrl } from "@std/path";
 import { ImportType, init, parse } from "es-module-lexer";
 import type { LoaderContext } from "webpack";
 
-export interface RouteCssGraph {
+export const ISLAND_QUERY = "?fresh-island";
+
+export interface ServerGraph {
   loader: () => Promise<Loader>;
+  css: boolean;
   follow: (path: string) => boolean;
+  isIsland: (path: string) => boolean;
 }
 
 type Options = { id: number };
 type Context = LoaderContext<Options>;
 
-const registry = new Map<number, RouteCssGraph>();
+const registry = new Map<number, ServerGraph>();
 let nextId = 0;
 
-export function registerRouteCssGraph(graph: RouteCssGraph): number {
+export function registerServerGraph(graph: ServerGraph): number {
   const id = nextId++;
   registry.set(id, graph);
   return id;
@@ -23,14 +27,19 @@ export function registerRouteCssGraph(graph: RouteCssGraph): number {
 const JS_MODULE = /\.[cm]?[jt]sx?$/;
 
 async function collectImports(
-  graph: RouteCssGraph,
+  graph: ServerGraph,
   resourcePath: string,
   source: string,
 ): Promise<string> {
   await init;
+  let imports;
+  try {
+    [imports] = parse(source, resourcePath);
+  } catch {
+    return "export {};";
+  }
   const loader = await graph.loader();
   const referrer = toFileUrl(resourcePath).href;
-  const [imports] = parse(source, resourcePath);
   const out: string[] = [];
   for (const { n: specifier, t, at } of imports) {
     if (t !== ImportType.Static || specifier === undefined) continue;
@@ -53,24 +62,37 @@ async function collectImports(
       continue;
     }
 
-    if (isCss) {
-      out.push(`import ${JSON.stringify(resolved)} with { type: "css" };`);
-    } else if (resolved.endsWith(".css")) {
-      out.push(`import ${JSON.stringify(resolved)};`);
+    if (isCss || resolved.endsWith(".css")) {
+      if (!graph.css) continue;
+      out.push(
+        isCss
+          ? `import ${JSON.stringify(resolved)} with { type: "css" };`
+          : `import ${JSON.stringify(resolved)};`,
+      );
     } else if (JS_MODULE.test(resolved) && graph.follow(resolved)) {
-      out.push(`import ${JSON.stringify(resolved)};`);
+      const request = graph.isIsland(resolved)
+        ? resolved + ISLAND_QUERY
+        : resolved;
+      out.push(`import ${JSON.stringify(request)};`);
     }
   }
   out.push("export {};");
   return out.join("\n");
 }
 
-export default function routeCssLoader(this: Context, source: string): void {
+export default function serverGraphLoader(
+  this: Context,
+  source: string,
+): void {
   const callback = this.async();
+  if (this.resourceQuery === ISLAND_QUERY) {
+    callback(null, "export {};");
+    return;
+  }
   const graph = registry.get(this.getOptions().id);
   if (!graph) {
     callback(
-      new Error(`route css graph ${this.getOptions().id} is not registered`),
+      new Error(`server graph ${this.getOptions().id} is not registered`),
     );
     return;
   }

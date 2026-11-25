@@ -3,7 +3,11 @@ import { assert, assertEquals, assertMatch } from "@std/assert";
 import { fromFileUrl, join, toFileUrl } from "@std/path";
 import { App, staticFiles } from "@freshpack/core";
 import { type ProdBuildCache, setBuildCache } from "@freshpack/core/internal";
-import { assertFreshCompilation, FreshPlugin } from "./fresh.ts";
+import {
+  assertFreshCompilation,
+  FreshPlugin,
+  type FreshPluginOptions,
+} from "./fresh.ts";
 
 const FIXTURE = new URL("./tests/fixture_build/", import.meta.url);
 const DIST = fromFileUrl(new URL("dist/", FIXTURE));
@@ -32,7 +36,10 @@ class EmitStaticPlugin {
   }
 }
 
-async function build(): Promise<ProdBuildCache<unknown>> {
+async function build(
+  dist = DIST,
+  options: FreshPluginOptions = {},
+): Promise<ProdBuildCache<unknown>> {
   const compiler = Webpack({
     mode: "production",
     target: "web",
@@ -43,14 +50,14 @@ async function build(): Promise<ProdBuildCache<unknown>> {
       splitChunks: { chunks: "all" },
     },
     output: {
-      path: DIST,
+      path: dist,
       clean: true,
       chunkFormat: "module",
       chunkLoading: "import",
       workerChunkLoading: "import",
     },
     plugins: [
-      new FreshPlugin(FIXTURE, (specifier) => import(specifier)),
+      new FreshPlugin(FIXTURE, (specifier) => import(specifier), options),
       new EmitStaticPlugin(),
     ],
   })!;
@@ -77,11 +84,20 @@ async function prodApp(): Promise<App<unknown>> {
   return app;
 }
 
-async function routeStylesheets(): Promise<string[]> {
-  const cacheSource = await Deno.readTextFile(join(DIST, "cache.mjs"));
-  const match = /id:"\/index"[^}]*?css:\[([^\]]*)\]/.exec(cacheSource);
-  assert(match, "route /index not found in cache.mjs");
+async function routeStylesheets(id = "/index", dist = DIST): Promise<string[]> {
+  const cacheSource = await Deno.readTextFile(join(dist, "cache.mjs"));
+  const match = new RegExp(`id:"${id}"[^}]*?css:\\[([^\\]]*)\\]`).exec(
+    cacheSource,
+  );
+  assert(match, `route ${id} not found in cache.mjs`);
   return [...match[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+}
+
+async function routeCss(id: string, dist = DIST): Promise<string> {
+  const stylesheets = await routeStylesheets(id, dist);
+  return (await Promise.all(
+    stylesheets.map((href) => Deno.readTextFile(join(dist, href))),
+  )).join("\n");
 }
 
 Deno.test("FreshPlugin - route css rewrites url() to emitted assets", async () => {
@@ -133,4 +149,36 @@ Deno.test("FreshPlugin - ignores test files in routes by default", async () => {
 
   const cacheSource = await Deno.readTextFile(join(DIST, "cache.mjs"));
   assert(!cacheSource.includes("ignored_test"));
+});
+
+Deno.test("FreshPlugin - discovers islands imported from other packages", async () => {
+  const cacheSource = await Deno.readTextFile(join(DIST, "cache.mjs"));
+
+  assertMatch(
+    cacheSource,
+    /\.prepare\([^)]*import\("[^"]*fixture_lib\/islands\/LibIsland\.ts"\)/,
+  );
+  assert(!cacheSource.includes("UnusedIsland"));
+
+  const island = [...devCache.islandRegistry.values()].find((island) =>
+    island.exportName === "LibIsland"
+  );
+  assert(island, "LibIsland is not registered");
+  const res = await devCache.readFile(island.file);
+  assert(res, `island chunk ${island.file} is not served`);
+  res.close();
+});
+
+Deno.test("FreshPlugin - collects styles imported by other packages", async () => {
+  assertMatch(await routeCss("/lib"), /\.lib-widget/);
+});
+
+Deno.test("FreshPlugin - graph exclude skips packages", async () => {
+  const dist = await Deno.makeTempDir();
+  await build(dist, { graph: { exclude: ["fixture-lib"] } });
+  const cacheSource = await Deno.readTextFile(join(dist, "cache.mjs"));
+
+  assert(!cacheSource.includes("LibIsland"));
+  assert(!/\.lib-widget/.test(await routeCss("/lib", dist)));
+  await Deno.remove(dist, { recursive: true });
 });

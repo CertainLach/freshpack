@@ -24,15 +24,16 @@ import { js, type JsRaw, toJsRaw } from "./quasiquote.ts";
 import type { WorkspaceOptions } from "@deno/loader";
 import { DenoLoaderPlugin, internalTranspileLoader } from "./resolve.ts";
 import { defineRequire } from "./requireHook.ts";
-import { registerRouteCssGraph } from "./routeCssLoader.ts";
+import { ISLAND_QUERY, registerServerGraph } from "./serverGraphLoader.ts";
+import { type GraphOptions, ServerGraphRules } from "./serverGraph.ts";
 
-const internalRouteCssLoader = defineRequire(
-  "@freshpack/webpack/internal-route-css-loader",
-  await import("./routeCssLoader.ts"),
+const internalServerGraphLoader = defineRequire(
+  "@freshpack/webpack/internal-server-graph-loader",
+  await import("./serverGraphLoader.ts"),
 );
 
-const ROUTE_CSS_LAYER = "fresh-route-css";
-const ROUTE_CSS_RUNTIME = "fresh-route-css-runtime";
+const SERVER_GRAPH_LAYER = "fresh-server-graph";
+const SERVER_GRAPH_RUNTIME = "fresh-server-graph-runtime";
 const JS_MODULE = /\.[cm]?[jt]sx?$/;
 
 interface WebpackFreshCompilation extends Webpack.Compilation {
@@ -122,6 +123,7 @@ export interface FreshPluginOptions {
   routeDir?: string | URL;
   clientEntry?: string | URL;
   ignore?: RegExp[];
+  graph?: GraphOptions;
 }
 
 export class FreshPlugin {
@@ -156,7 +158,7 @@ export class FreshPlugin {
     assert(this.#dist, "dist path was not determined yet");
     return relativePosix(this.#dist, path);
   }
-  #islandFiles = new Set<string>();
+  #graphRules?: ServerGraphRules;
 
   applyDenoLoader(compiler: Webpack.Compiler): DenoLoaderPlugin {
     const existing = compiler.options.plugins.find((
@@ -190,19 +192,29 @@ export class FreshPlugin {
     }
   }
 
-  applyRouteCss(compiler: Webpack.Compiler, denoLoader: DenoLoaderPlugin) {
-    compiler.options.module.rules.push({
-      with: { type: "css" },
-      type: "css",
-      parser: { exportType: "link" },
-    });
+  applyServerGraph(
+    compiler: Webpack.Compiler,
+    denoLoader: DenoLoaderPlugin,
+    css: boolean,
+  ) {
+    if (css) {
+      compiler.options.module.rules.push({
+        with: { type: "css" },
+        type: "css",
+        parser: { exportType: "link" },
+      });
+    }
 
-    const root = fromFileUrl(this.baseUrl);
-    const graphId = registerRouteCssGraph({
+    const rules = new ServerGraphRules(
+      fromFileUrl(this.baseUrl),
+      this.options.graph,
+    );
+    this.#graphRules = rules;
+    const graphId = registerServerGraph({
       loader: () => denoLoader.loader,
-      follow: (path) =>
-        path.startsWith(root) && !path.includes("/node_modules/") &&
-        !this.#islandFiles.has(path),
+      css,
+      follow: (path) => rules.follow(path),
+      isIsland: (path) => rules.isIsland(path),
     });
 
     compiler.hooks.compilation.tap(
@@ -211,21 +223,22 @@ export class FreshPlugin {
         normalModuleFactory.hooks.afterResolve.tap(
           { name: FreshPlugin.name, stage: 100 },
           ({ createData: data }) => {
-            if (data.layer !== ROUTE_CSS_LAYER) return;
+            if (data.layer !== SERVER_GRAPH_LAYER) return;
             const resource = data.resource;
-            if (
-              resource === undefined || resource.includes("://") ||
-              !JS_MODULE.test(resource)
-            ) {
-              return;
-            }
-            data.loaders = [
-              {
-                loader: internalRouteCssLoader,
-                options: { id: graphId },
-                ident: null,
-                type: null,
-              },
+            if (resource === undefined) return;
+            const island = resource.endsWith(ISLAND_QUERY);
+            const path = island
+              ? resource.slice(0, -ISLAND_QUERY.length)
+              : resource;
+            if (path.includes("://") || !JS_MODULE.test(path)) return;
+            const graphLoader = {
+              loader: internalServerGraphLoader,
+              options: { id: graphId },
+              ident: null,
+              type: null,
+            };
+            data.loaders = island ? [graphLoader] : [
+              graphLoader,
               ...(data.loaders ?? []).filter((v) =>
                 v.loader === internalTranspileLoader
               ),
@@ -233,6 +246,21 @@ export class FreshPlugin {
           },
         );
       },
+    );
+  }
+
+  #addEntry(
+    compilation: Webpack.Compilation,
+    file: string,
+    options: Webpack.EntryOptions & { name: string },
+  ): Promise<void> {
+    return new Promise<void>((res, rej) =>
+      compilation.addEntry(
+        "",
+        Webpack.EntryPlugin.createDependency(file, { name: options.name }),
+        { ...options, library: { type: "module" } },
+        (err) => err ? rej(err) : res(),
+      )
     );
   }
 
@@ -268,8 +296,11 @@ export class FreshPlugin {
     (new Webpack.DefinePlugin({ Deno: "undefined" })).apply(compiler);
 
     compiler.options.experiments.css ??= true;
-    const routeCssEnabled = compiler.options.experiments.css === true;
-    if (routeCssEnabled) this.applyRouteCss(compiler, denoLoader);
+    this.applyServerGraph(
+      compiler,
+      denoLoader,
+      compiler.options.experiments.css === true,
+    );
 
     const entryOption = compiler.options.entry;
     const userEntries = new Set(
@@ -530,98 +561,51 @@ export class FreshPlugin {
         compilation.freshIslands = [];
         compilation.freshRouteCss = [];
         compilation.freshRoot = this.pathRelativeToBase(".");
-        this.#islandFiles = new Set(item.islands);
+        this.#graphRules?.reset(new Set(item.islands));
 
-        const addEntryPromises = [];
-        if (routeCssEnabled) {
-          let routeId = 0;
-          for (const route of item.routes) {
-            if ((route.type as string) === "middleware") continue;
-            const name = compiler.options.mode === "production"
-              ? `rc${routeId++}`
-              : `rc${manglePath(route.filePath)}`;
-            compilation.freshRouteCss.push({
-              entryName: name,
-              filePath: route.filePath,
-            });
-            addEntryPromises.push(
-              new Promise<void>((res, rej) =>
-                compilation.addEntry(
-                  "",
-                  Webpack.EntryPlugin.createDependency(route.filePath, {
-                    name,
-                  }),
-                  {
-                    name,
-                    layer: ROUTE_CSS_LAYER,
-                    runtime: ROUTE_CSS_RUNTIME,
-                    library: {
-                      type: "module",
-                    },
-                  },
-                  (err) => {
-                    if (err) return rej(err);
-                    res();
-                  },
-                )
-              ),
-            );
+        const production = compiler.options.mode === "production";
+        const graphEntries = [];
+        let routeId = 0;
+        for (const route of item.routes) {
+          if ((route.type as string) === "middleware") continue;
+          const name = production
+            ? `rc${routeId++}`
+            : `rc${manglePath(route.filePath)}`;
+          compilation.freshRouteCss.push({
+            entryName: name,
+            filePath: route.filePath,
+          });
+          graphEntries.push(this.#addEntry(compilation, route.filePath, {
+            name,
+            layer: SERVER_GRAPH_LAYER,
+            runtime: SERVER_GRAPH_RUNTIME,
+          }));
+        }
+        graphEntries.push(this.#addEntry(
+          compilation,
+          this.resolvePath(this.options.clientEntry ?? "./client.ts"),
+          { name: "client-entry" },
+        ));
+        await Promise.all(graphEntries);
+
+        const discovered = new Set<string>();
+        for (const module of compilation.modules) {
+          if (module.layer !== SERVER_GRAPH_LAYER) continue;
+          const resource = (module as Webpack.NormalModule).resource;
+          if (resource?.endsWith(ISLAND_QUERY)) {
+            discovered.add(resource.slice(0, -ISLAND_QUERY.length));
           }
         }
+        const islands = new Set([...item.islands, ...[...discovered].sort()]);
+
         let isId = 0;
-        for (const island of item.islands) {
-          const name = compiler.options.mode === "production"
-            ? `is${isId++}`
-            : manglePath(island);
+        const islandEntries = [];
+        for (const island of islands) {
+          const name = production ? `is${isId++}` : manglePath(island);
           compilation.freshIslands.push({ entryName: name, filePath: island });
-          addEntryPromises.push(
-            new Promise<void>((res, rej) =>
-              compilation.addEntry(
-                "",
-                Webpack.EntryPlugin.createDependency(`${island}`, {
-                  name,
-                }),
-                {
-                  name,
-                  library: {
-                    type: "module",
-                  },
-                },
-                (err) => {
-                  if (err) return rej(err);
-                  res();
-                },
-              )
-            ),
-          );
+          islandEntries.push(this.#addEntry(compilation, island, { name }));
         }
-        {
-          const name = "client-entry";
-          const file = this.resolvePath(
-            this.options.clientEntry ?? "./client.ts",
-          );
-          addEntryPromises.push(
-            new Promise<void>((res, rej) =>
-              compilation.addEntry(
-                "",
-                Webpack.EntryPlugin.createDependency(file, {
-                  name,
-                }),
-                {
-                  name,
-                  library: {
-                    type: "module",
-                  },
-                },
-                (e) => {
-                  if (e) return rej(e);
-                  res();
-                },
-              )
-            ),
-          );
-        }
-        await Promise.all(addEntryPromises);
+        await Promise.all(islandEntries);
       },
     );
   }
