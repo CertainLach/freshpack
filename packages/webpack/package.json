@@ -9,6 +9,9 @@
     "./unmap": "./unmap.ts",
     "./requireHook": "./requireHook.ts"
   },
+  "scripts": {
+    "prepack": "raphus"
+  },
   "dependencies": {
     "@deno/loader": "jsr:^0.5.0",
     "@freshpack/core": "workspace:*",
@@ -17,11 +20,13 @@
     "@std/encoding": "jsr:^1.0.11",
     "@std/media-types": "jsr:^1.1.0",
     "@std/path": "jsr:^1.1.6",
-    "es-module-lexer": "^2.3.2",
+    "es-module-lexer": "^2.3.2"
+  },
+  "devDependencies": {
     "webpack": "^5.112.2"
   },
-  "scripts": {
-    "prepack": "raphus"
+  "peerDependencies": {
+    "webpack": "^5.112.2"
   },
   "publishConfig": {
     "directory": "dist",
