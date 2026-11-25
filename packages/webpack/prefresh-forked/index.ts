@@ -1,13 +1,13 @@
 /* FIXME: Typings are awful in this file, the port was very crude */
 
-import Webpack from "webpack";
+import type Webpack from "webpack";
 import {
   injectRefreshFunctions,
   matcherOptions,
   NAME,
   prefreshUtils,
 } from "./utils/constants.ts";
-import { PrefreshRuntimeModule } from "./utils/Runtime.ts";
+import { createPrefreshRuntimeModule } from "./utils/Runtime.ts";
 import { defineRequire } from "../requireHook.ts";
 
 type Options = {
@@ -23,18 +23,14 @@ const internalPrefreshLoader = defineRequire(
 );
 
 export class DenoPreactRefreshPlugin {
-  matcher;
-  constructor(public options: Options) {
-    this.matcher = Webpack.ModuleFilenameHelpers.matchObject.bind(
-      undefined,
-      matcherOptions,
-    );
-  }
+  matcher: (str: string) => boolean = () => false;
+  constructor(public options: Options) {}
 
-  webpack5(
-    compiler: Webpack.Compiler,
-    RuntimeGlobals: typeof Webpack.RuntimeGlobals,
-  ) {
+  webpack5(compiler: Webpack.Compiler) {
+    const { RuntimeGlobals } = compiler.webpack;
+    const PrefreshRuntimeModule = createPrefreshRuntimeModule(
+      compiler.webpack,
+    );
     compiler.hooks.compilation.tap(
       NAME,
       (compilation, { normalModuleFactory }) => {
@@ -89,9 +85,13 @@ export class DenoPreactRefreshPlugin {
       );
     }
 
-    const providePlugin = new Webpack.ProvidePlugin(provide);
+    this.matcher = compiler.webpack.ModuleFilenameHelpers.matchObject.bind(
+      undefined,
+      matcherOptions,
+    );
+    const providePlugin = new compiler.webpack.ProvidePlugin(provide);
     providePlugin.apply(compiler);
-    const dependency = Webpack.EntryPlugin.createDependency(
+    const dependency = compiler.webpack.EntryPlugin.createDependency(
       "@prefresh/core",
       { name: "@prefresh/core" },
     );
@@ -104,11 +104,6 @@ export class DenoPreactRefreshPlugin {
       );
     });
 
-    this.webpack5(
-      compiler,
-      compiler.webpack
-        ? compiler.webpack.RuntimeGlobals
-        : Webpack.RuntimeGlobals,
-    );
+    this.webpack5(compiler);
   }
 }

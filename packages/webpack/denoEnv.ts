@@ -1,4 +1,5 @@
-import Webpack, { type Compiler } from "webpack";
+import type Webpack from "webpack";
+import type { Compiler } from "webpack";
 
 type JavascriptParser = Webpack.javascript.JavascriptParser;
 
@@ -60,7 +61,7 @@ export class DenoEnvPlugin {
               throw new Error(`Env var is not allowed in bundling: ${name}`);
             }
             const value = this.#value(name, compiler);
-            const dep = new Webpack.dependencies.ConstDependency(
+            const dep = new compiler.webpack.dependencies.ConstDependency(
               value === undefined ? "undefined" : JSON.stringify(value),
               expr.range!,
             );

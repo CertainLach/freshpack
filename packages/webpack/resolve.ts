@@ -6,7 +6,8 @@ import {
   type WorkspaceOptions,
 } from "@deno/loader";
 import { assert, unreachable } from "@std/assert";
-import Webpack, { type Compiler } from "webpack";
+import type Webpack from "webpack";
+import type { Compiler } from "webpack";
 import { Buffer } from "node:buffer";
 import { ensureModPath, stripFileUrl } from "./util.ts";
 import { dirname } from "@std/path";

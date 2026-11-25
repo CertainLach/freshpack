@@ -1,4 +1,4 @@
-import Webpack from "webpack";
+import type Webpack from "webpack";
 
 const NAMESPACE = "__PREFRESH__";
 
@@ -15,65 +15,71 @@ self.$RefreshSig$ = function() {
 }
 `;
 
-export class PrefreshRuntimeModule extends Webpack.RuntimeModule {
-  constructor() {
-    super("prefresh", 5);
-  }
+export function createPrefreshRuntimeModule(
+  webpack: Webpack.Compiler["webpack"],
+): new () => Webpack.RuntimeModule {
+  const { RuntimeGlobals, RuntimeModule, Template } = webpack;
 
-  override generate() {
-    const { runtimeTemplate } = this.compilation as any;
-    const declare = runtimeTemplate.supportsConst() ? "const" : "var";
+  return class PrefreshRuntimeModule extends RuntimeModule {
+    constructor() {
+      super("prefresh", 5);
+    }
 
-    return Webpack.Template.asString([
-      `${Webpack.RuntimeGlobals.interceptModuleExecution}.push(${
-        runtimeTemplate.basicFunction("options", [
-          `${declare} originalFactory = options.factory;`,
-          `options.factory = ${
-            runtimeTemplate.basicFunction(
-              "moduleObject, moduleExports, webpackRequire",
-              [
-                `if (typeof self !== "undefined" && typeof self.${NAMESPACE} !== "undefined") {`,
-                Webpack.Template.indent([
-                  `${declare} prevRefreshReg = self.$RefreshReg$;`,
-                  `${declare} prevRefreshSig = self.$RefreshSig$;`,
-                  beforeModule,
-                  `${declare} reg = ${
-                    runtimeTemplate.basicFunction(
-                      "currentModuleId",
-                      [
-                        "self.$RefreshReg$ = function(type, id) {",
-                        Webpack.Template.indent(
-                          `self.${NAMESPACE}.register(type, currentModuleId + ' ' + id);`,
-                        ),
-                        "};",
-                      ],
-                    )
-                  }`,
-                  "reg()",
-                  "try {",
-                  Webpack.Template.indent(
+    override generate() {
+      const { runtimeTemplate } = this.compilation as any;
+      const declare = runtimeTemplate.supportsConst() ? "const" : "var";
+
+      return Template.asString([
+        `${RuntimeGlobals.interceptModuleExecution}.push(${
+          runtimeTemplate.basicFunction("options", [
+            `${declare} originalFactory = options.factory;`,
+            `options.factory = ${
+              runtimeTemplate.basicFunction(
+                "moduleObject, moduleExports, webpackRequire",
+                [
+                  `if (typeof self !== "undefined" && typeof self.${NAMESPACE} !== "undefined") {`,
+                  Template.indent([
+                    `${declare} prevRefreshReg = self.$RefreshReg$;`,
+                    `${declare} prevRefreshSig = self.$RefreshSig$;`,
+                    beforeModule,
+                    `${declare} reg = ${
+                      runtimeTemplate.basicFunction(
+                        "currentModuleId",
+                        [
+                          "self.$RefreshReg$ = function(type, id) {",
+                          Template.indent(
+                            `self.${NAMESPACE}.register(type, currentModuleId + ' ' + id);`,
+                          ),
+                          "};",
+                        ],
+                      )
+                    }`,
+                    "reg()",
+                    "try {",
+                    Template.indent(
+                      "originalFactory.call(this, moduleObject, moduleExports, webpackRequire);",
+                    ),
+                    "} finally {",
+                    Template.indent(
+                      "self.$RefreshReg$ = prevRefreshReg;",
+                    ),
+                    Template.indent(
+                      "self.$RefreshSig$ = prevRefreshSig;",
+                    ),
+                    "}",
+                  ]),
+                  "} else {",
+                  Template.indent(
                     "originalFactory.call(this, moduleObject, moduleExports, webpackRequire);",
                   ),
-                  "} finally {",
-                  Webpack.Template.indent(
-                    "self.$RefreshReg$ = prevRefreshReg;",
-                  ),
-                  Webpack.Template.indent(
-                    "self.$RefreshSig$ = prevRefreshSig;",
-                  ),
                   "}",
-                ]),
-                "} else {",
-                Webpack.Template.indent(
-                  "originalFactory.call(this, moduleObject, moduleExports, webpackRequire);",
-                ),
-                "}",
-              ],
-            )
-          }`,
-        ])
-      })`,
-      "",
-    ]);
-  }
+                ],
+              )
+            }`,
+          ])
+        })`,
+        "",
+      ]);
+    }
+  };
 }

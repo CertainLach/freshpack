@@ -3,7 +3,7 @@ import {
   type FsRouteFileNoMod,
   TEST_FILE_PATTERN,
 } from "@freshpack/core/internal-dev";
-import Webpack from "webpack";
+import type Webpack from "webpack";
 import { assertAbsolutePath, assertDirURL, manglePath } from "./util.ts";
 import { assert } from "@std/assert";
 import { IslandPreparer, ProdBuildCache } from "@freshpack/core/internal";
@@ -257,7 +257,9 @@ export class FreshPlugin {
     return new Promise<void>((res, rej) =>
       compilation.addEntry(
         "",
-        Webpack.EntryPlugin.createDependency(file, { name: options.name }),
+        compilation.compiler.webpack.EntryPlugin.createDependency(file, {
+          name: options.name,
+        }),
         { ...options, library: { type: "module" } },
         (err) => err ? rej(err) : res(),
       )
@@ -274,7 +276,7 @@ export class FreshPlugin {
       // Solvable by creating custom dependency plugin, or requiring user to manually specify
       // at least one entry... Or by registering EntryDependency manually as done here.
       const EntryDependency =
-        Webpack.EntryPlugin.createDependency(`dummy`, {}).constructor;
+        compiler.webpack.EntryPlugin.createDependency(`dummy`, {}).constructor;
 
       compiler.hooks.compilation.tap(
         FreshPlugin.name,
@@ -293,7 +295,7 @@ export class FreshPlugin {
     (new RawImportsPlugin(this.options.rawImports)).apply(compiler);
     (new ImportMetaResolveAssetPlugin()).apply(compiler);
     // Some @std and other packages detect deno on presence of Deno global, dead-code-elimnate this stuff
-    (new Webpack.DefinePlugin({ Deno: "undefined" })).apply(compiler);
+    (new compiler.webpack.DefinePlugin({ Deno: "undefined" })).apply(compiler);
 
     compiler.options.experiments.css ??= true;
     this.applyServerGraph(
