@@ -133,30 +133,6 @@ importers:
     linkDirectory: false
     publishDirectory: dist
 
-  packages/init:
-    dependencies:
-      '@std/cli':
-        specifier: jsr:^1.0.32
-        version: '@jsr/std__cli@1.0.32'
-      '@std/fmt':
-        specifier: jsr:^1.0.10
-        version: '@jsr/std__fmt@1.0.10'
-      '@std/path':
-        specifier: jsr:^1.1.6
-        version: '@jsr/std__path@1.1.6'
-      '@std/semver':
-        specifier: jsr:^1.0.8
-        version: '@jsr/std__semver@1.0.8'
-    devDependencies:
-      '@std/expect':
-        specifier: jsr:^1.0.20
-        version: '@jsr/std__expect@1.0.20'
-      '@std/testing':
-        specifier: jsr:^1.0.21
-        version: '@jsr/std__testing@1.0.21'
-    linkDirectory: false
-    publishDirectory: dist
-
   packages/runtime:
     dependencies:
       '@freshpack/core':
@@ -571,9 +547,6 @@ packages:
 
   '@jsr/std__path@1.1.6':
     resolution: {integrity: sha512-H1Cmg6z8jFyIsQbVV+vZB4eOx4k6Qg8lyUM6l7nZysj5MZumg89kb0M1bsPBTGQis3fw6mJFkJELo5+AK6oCFA==, tarball: https://npm.jsr.io/~/11/@jsr/std__path/1.1.6.tgz}
-
-  '@jsr/std__semver@1.0.8':
-    resolution: {integrity: sha512-YhkykPU2Majz66e+rQbP0okYc7kKv+U32aguLPCXZZAL+vEVmBA+khHjPHhLBpWR073gzU3WHqGRgB7a/aXCjg==, tarball: https://npm.jsr.io/~/11/@jsr/std__semver/1.0.8.tgz}
 
   '@jsr/std__streams@1.2.0':
     resolution: {integrity: sha512-cQnU2wdP12rYRy+gGAiFarEK9YmWjVwnFMiOGIe0wMKmRLY68INH9hB/mqjKdPX/ruUhNYB70x5YRPLzUYIrbg==, tarball: https://npm.jsr.io/~/11/@jsr/std__streams/1.2.0.tgz}
@@ -1538,8 +1511,6 @@ snapshots:
   '@jsr/std__path@1.1.6':
     dependencies:
       '@jsr/std__internal': 1.0.14
-
-  '@jsr/std__semver@1.0.8': {}
 
   '@jsr/std__streams@1.2.0':
     dependencies:
